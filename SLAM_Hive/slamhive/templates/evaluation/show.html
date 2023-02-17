@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+    <br>
+    <h4 style="text-align: center;  height:25;">
+        {{ config_dict["slam-hive-algorithm"] }} <small>with</small> {{ config_dict["slam-hive-dataset"] }}
+    </h4>
+    <br>
+    <table class="table table-bordered">
+        <caption>Algorithm parameters</caption>
+        <thead>
+          <tr>
+            <th>Parameter name</th>
+            <th >Parameter value</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for key, value in config_dict["algorithm-parameters"].items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+          {% endfor %} 
+        </tbody>
+    </table> 
+    
+    <table class="table table-bordered">
+        <caption>ATE and RPE Error Statistics</caption>
+        <thead>
+          <tr>
+            <th> </th>
+            <th>RMSE</th>
+            <th >Mean</th>
+            <th>Median</th>
+            <th >Std</th>
+            <th>Min</th>
+            <th >Max</th>
+            <th >SSE</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>ATE</td>
+                <td>{{ stats_dict['rmse'] }}</td>
+                <td>{{ stats_dict['mean'] }}</td>
+                <td>{{ stats_dict['median'] }}</td>
+                <td>{{ stats_dict['std'] }}</td>
+                <td>{{ stats_dict['min'] }}</td>
+                <td>{{ stats_dict['max'] }}</td>
+                <td>{{ stats_dict['sse'] }}</td>    
+            </tr>
+            <tr>
+                <td>RPE</td>
+                <td>{{ rpe_stats_dict['rmse'] }}</td>
+                <td>{{ rpe_stats_dict['mean'] }}</td>
+                <td>{{ rpe_stats_dict['median'] }}</td>
+                <td>{{ rpe_stats_dict['std'] }}</td>
+                <td>{{ rpe_stats_dict['min'] }}</td>
+                <td>{{ rpe_stats_dict['max'] }}</td>
+                <td>{{ rpe_stats_dict['sse'] }}</td>    
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="table table-bordered">
+        <caption>Computing resource usage</caption>
+        <thead>
+          <tr>
+            <th>Max CPU (core)</th>
+            <th >Mean CPU (core)</th>
+            <th >Max Memery (MB)</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ usage_info["max_cpu"] }}</td>
+                <td>{{ usage_info["mean_cpu"] }}</td>
+                <td>{{ usage_info["max_ram"] }}</td>  
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="row">
+        {% for mapping_usage_img_path in mapping_usage_img_list %}
+            <div class="col-md-6">
+                <img src="{{ url_for('get_img', imgpath=mapping_usage_img_path) }}" width="90%" height="90%"/>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="row">
+        {% for evo_img_path in evo_img_list %}
+            <div class="col-md-6">
+                <img src="{{ url_for('get_img', imgpath=evo_img_path) }}" width="80%" height="80%"/>
+            </div>   
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+<title>{% block title %}Home{% endblock %}</title>
+
+{% block content %}
+<br><h5 style="text-align: center">Support algorithms List</h5>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Algorithm</th>
+            <th>Image (REPOSITORY:TAG)</th>
+            <th>Scripts Path</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+             <td>EVO</td>
+            <td>slam-hive-evaluation:evo</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/evaluation/evo>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/evaluation/evo</a>    
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/evo</a>    
+            </td>
+        </tr>   
+        <tr>
+            <td rowspan="3" style="vertical-align: middle;">ORB-SLAM2</td>
+            <td>slam-hive-algorithm:orb-slam2-ros-mono</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam2-ros-mono>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam2-ros-mono</a>    
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam2-ros-mono</a> 
+        </tr>
+        <tr>
+            <td>slam-hive-algorithm:orb-slam2-ros-stereo</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam2-ros-stereo>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam2-ros-stereo</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam2-ros-stereo</a> 
+        </tr> 
+        <tr>
+            <td>slam-hive-algorithm:orb-slam2-ros-rgbd</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam2-ros-rgbd>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam2-ros-rgbd</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam2-ros-rgbd</a> 
+        </tr>
+        <tr>
+            <td>VINS-Mono</td>
+            <td>slam-hive-algorithm:vins-mono</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-mono>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-mono</a>    
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/vins-mono</a> 
+       </tr>
+       <tr>
+            <td rowspan="3" style="vertical-align: middle;">VINS-Fusion</td>
+            <td>slam-hive-algorithm:vins-fusion-mono-imu</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-fusion-mono-imu>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-fusion-mono-imu</a>    
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/vins-fusion-mono-imu</a> 
+        </tr>
+        <tr>
+            <td>slam-hive-algorithm:vins-fusion-stereo</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-fusion-stereo>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-fusion-stereo</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/vins-fusion-stereo</a> 
+        </tr> 
+        <tr>
+            <td>slam-hive-algorithm:vins-fusion-stereo-imu</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/vins-fusion-stereo-imu>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithmsvins-fusion-stereo-imu</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/vins-fusion-stereo-imu</a> 
+        </tr>
+        <tr>
+            <td rowspan="5" style="vertical-align: middle;">ORB-SLAM3</td>
+            <td>slam-hive-algorithm:orb-slam3-ros-mono</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-mono>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-mono</a>    
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam3-ros-mono</a> 
+        </tr>
+        <tr>
+            <td>slam-hive-algorithm:orb-slam3-ros-mono-inertial</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-mono-inertial>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-mono-inertial</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam3-ros-mono-inertial</a> 
+        </tr> 
+        <tr>
+            <td>slam-hive-algorithm:orb-slam3-ros-stereo</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-stereo>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/orb-slam3-ros-stereo</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam3-ros-stereo</a> 
+        </tr>
+        <tr>
+            <td>slam-hive-algorithm:orb-slam3-ros-stereo-inertial</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-stereo-inertial>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-stereo-inertial</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam3-ros-stereo-inertial</a> 
+        </tr> 
+        <tr>
+            <td>slam-hive-algorithm:orb-slam3-ros-rgbd</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/orb-slam3-ros-rgbd>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/orb-slam3-ros-rgbd</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/orb-slam3-ros-rgbd</a> 
+        </tr>
+        <tr>
+            <td>LIO-SAM</td>
+            <td>slam-hive-algorithm:lio-sam</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/lio-sam</a> 
+        </tr>
+    </tbody>
+</table>
+
+<br><br><h5 style="text-align: center">Support datasets List</h5><br>
+<li>For every dataset sequence, we provide a script for replaying and remapping. </li>
+<li>For EuRoC datasets, we provide groundtruth.txt in tum format, all need to do is download the sequence. </li>
+<li>For TUM RGB-D datasets, just download the sequennce and groundtruth, and rename groundtruth file to groundtruth.txt.</li>
+<li>For KITTI datasets, we provide the groundtruth, all need to do is download the raw data and use <a href=https://github.com/tomas789/kitti2bag>kitti2bag</a> to transform it to bag.</li>
+<li>For EuRoC and TUM RGB-D datastes, we provide download script: SLAM_Hive/slam_hive_datasets/download_all.py. </li>
+<br>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Dataset</th>
+            <th>Sequence</th>
+            <th>Download</th>
+            <th>Groundtruth</th>
+            <th>Script</th>
+        </tr>
+    </thead>
+    <tbody>  
+        <tr>
+            <td rowspan="11" style="vertical-align: middle;">EuRoC MAV</td>
+            <td>MH_01_easy</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_01_easy/MH_01_easy.bag>MH_01_easy.bag</a></td>
+            <td rowspan="11" style="vertical-align: middle;">We provide groundtruth already converted to tum format. They are in SLAM_Hive/slam_hive_datasets/<>/groundturth.txt</td>
+            <td rowspan="11" style="vertical-align: middle;">In SLAM_Hive/slam_hive_datasets/<>/rosbag_play.py</td>
+        </tr>
+        <tr>
+            <td>MH_02_easy</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_02_easy/MH_02_easy.bag>MH_02_easy.bag</a></td>
+        </tr> 
+        <tr>
+            <td>MH_03_medium</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_03_medium/MH_03_medium.bag>MH_03_medium.bag</a></td>
+        </tr>
+        <tr>
+            <td>MH_04_difficult</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_04_difficult/MH_04_difficult.bag>MH_04_difficult.bag</a></td>
+        </tr> 
+        <tr>
+            <td>MH_05_difficult</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_05_difficult/MH_05_difficult.bag>MH_05_difficult.bag</a></td>
+        </tr>
+        <tr>
+            <td>V1_01_easy</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/vicon_room1/V1_01_easy/V1_01_easy.bag>V1_01_easy.bag</a></td>
+        </tr> 
+        <tr>
+            <td>V1_02_medium</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/vicon_room1/V1_02_medium/V1_02_medium.bag>V1_02_medium.bag</a></td>
+        </tr>
+        <tr>
+            <td>V1_03_difficult</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/vicon_room1/V1_03_difficult/V1_03_difficult.bag>V1_03_difficult.bag</a></td>
+        </tr> 
+        <tr>
+            <td>V2_01_easy</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/vicon_room2/V2_01_easy/V2_01_easy.bag>V2_01_easy.bag</a></td>
+        </tr>
+        <tr>
+            <td>V2_02_medium</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/vicon_room2/V2_02_medium/V2_02_medium.bag>V2_02_medium.bag</a></td>
+        </tr> 
+        <tr>
+            <td>V2_03_difficult</td>
+            <td><a href=http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/vicon_room2/V2_03_difficult/V2_03_difficult.bag>V2_03_difficult.bag</a></td>
+        </tr>
+
+        <tr>
+            <td rowspan="15" style="vertical-align: middle;">TUM RGB-D</td>
+            <td>rgbd_dataset_freiburg1_xyz</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.bag>rgbd_dataset_freiburg1_xyz.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz-groundtruth.txt>groundtruth.txt</a></td>
+            <td rowspan="15" style="vertical-align: middle;">In SLAM_Hive/slam_hive_datasets/<>/rosbag_play.py</td>
+        </tr>
+        <tr>
+            <td>rgbd_dataset_freiburg1_rpy</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy.bag>rgbd_dataset_freiburg1_rpy.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_rpy-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg2_xyz</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_xyz.bag>rgbd_dataset_freiburg2_xyz.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_xyz-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg2_rpy</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_rpy.bag>rgbd_dataset_freiburg2_rpy.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_rpy-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg1_360</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_360.bag>rgbd_dataset_freiburg1_360.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_360-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg1_floor</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_floor.bag>rgbd_dataset_freiburg1_floor.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_floor-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg1_desk</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk.bag>rgbd_dataset_freiburg1_desk.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg1_desk2</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk2.bag>rgbd_dataset_freiburg1_desk2.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_desk2-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg1_room</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_room.bag>rgbd_dataset_freiburg1_room.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_room-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg2_360_hemisphere</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_360_hemisphere.bag>rgbd_dataset_freiburg2_360_hemisphere.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_360_hemisphere-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg2_360_kidnap</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_360_kidnap.bag>rgbd_dataset_freiburg2_360_kidnap.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_360_kidnap-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg2_desk</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_desk.bag>rgbd_dataset_freiburg2_desk.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_desk-groundtruth.txt>groundtruth.txt</a></td>
+        </tr>
+        <tr>
+            <td>rgbd_dataset_freiburg2_large_no_loop</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_large_no_loop.bag>rgbd_dataset_freiburg2_large_no_loop.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_large_no_loop-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg2_large_with_loop</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_large_with_loop.bag>rgbd_dataset_freiburg2_large_with_loop.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg2/rgbd_dataset_freiburg2_large_with_loop-groundtruth.txt>groundtruth.txt</a></td>
+        </tr> 
+        <tr>
+            <td>rgbd_dataset_freiburg3_long_office_household</td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg3/rgbd_dataset_freiburg3_long_office_household.bag>rgbd_dataset_freiburg3_long_office_household.bag</a></td>
+            <td><a href=https://vision.in.tum.de/rgbd/dataset/freiburg3/rgbd_dataset_freiburg3_long_office_household-groundtruth.txt>groundtruth.txt</a></td>
+        </tr>
+
+        <tr>
+            <td rowspan="10" style="vertical-align: middle;">KITTI</td>
+            <td>kitti_2011_10_03_drive_0027_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_10_03_drive_0027/2011_10_03_drive_0027_sync.zip>kitti_2011_10_03_drive_0027_synced.bag</a></td>
+            <td rowspan="10" style="vertical-align: middle;">We provide groundtruth already converted to tum format. They are in SLAM_Hive/slam_hive_datasets/<>/groundturth.txt</td>
+            <td rowspan="10" style="vertical-align: middle;">In SLAM_Hive/slam_hive_datasets/<>/rosbag_play.py</td>
+        </tr>
+        <tr>
+            <td>kitti_2011_10_03_drive_0042_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_10_03_drive_0042/2011_10_03_drive_0042_sync.zip>kitti_2011_10_03_drive_0042_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_10_03_drive_0034_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_10_03_drive_0034/2011_10_03_drive_0034_sync.zip>kitti_2011_10_03_drive_0034_synced.bag</a></td>
+        </tr>
+        <!-- <tr>
+            <td>kitti_2011_09_26_drive_0067_synced</td>
+            <td><a href=>kitti_2011_09_26_drive_0067_synced.bag</a></td>
+        </tr> -->
+        <tr>
+            <td>kitti_2011_09_30_drive_0016_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0016/2011_09_30_drive_0016_sync.zip>kitti_2011_09_30_drive_0016_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_09_30_drive_0018_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0018/2011_09_30_drive_0018_sync.zip>kitti_2011_09_30_drive_0018_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_09_30_drive_0020_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0020/2011_09_30_drive_0020_sync.zip>kitti_2011_09_30_drive_0020_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_09_30_drive_0027_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0027/2011_09_30_drive_0027_sync.zip>kitti_2011_09_30_drive_0027_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_09_30_drive_0028_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0028/2011_09_30_drive_0028_sync.zip>kitti_2011_09_30_drive_0028_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_09_30_drive_0033_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0033/2011_09_30_drive_0033_sync.zip>kitti_2011_09_30_drive_0033_synced.bag</a></td>
+        </tr>
+        <tr>
+            <td>kitti_2011_09_30_drive_0034_synced</td>
+            <td><a href=https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/2011_09_30_drive_0034/2011_09_30_drive_0034_sync.zip>kitti_2011_09_30_drive_0034_synced.bag</a></td>
+        </tr>
+    </tbody>
+</table>
+{% endblock %}

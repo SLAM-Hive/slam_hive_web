@@ -1,0 +1,69 @@
+{% from 'bootstrap4/nav.html' import render_nav_item %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>SLAM Hive-{% block title %}{% endblock title %}</title>
+        <div class="header" >
+            <h2>SLAM Hive<small>: A SLAM Evaluation Benchmark System</small></h2>
+        </div>
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='./css/bootstrap.css') }}">
+    {% endblock head %}
+</head>
+<body>
+{% block nav %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">{{ home }}</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
+                    aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarColor01">
+                <ul class="navbar-nav mr-auto">
+                    {{ render_nav_item('home', 'Home') }}
+                    {{ render_nav_item('index_algo', 'Algorithm') }}
+                    {{ render_nav_item('index_dataset', 'Dataset') }}
+                    {{ render_nav_item('index_algoparam', 'Parameter') }}
+                    {{ render_nav_item('index_config', 'MappingTaskConfig') }}
+                    {{ render_nav_item('index_mappingtask', 'MappingTask') }}
+                    {{ render_nav_item('index_evaluate', 'Evaluation') }}
+                </ul>
+            </div>
+        </div>
+    </nav>
+{% endblock nav %}
+
+<main class="container-fluid" style="padding-left: 10%;padding-right: 10%;">
+    <div class="row">
+        <div class="col-md-12">
+            {% block content %}{% endblock content %}
+        </div>
+    </div>
+    
+        
+    {% block footer %}
+    <footer>
+        <p class="float-left">
+            <small> &copy; 2022 <a href="https://robotics.shanghaitech.edu.cn" title="Written by MARS Lab" target="_blank">ShanghaiTech MARS Lab</a> -
+                <a href="https://star-center.shanghaitech.edu.cn/gitlab/slam-hive" title="Fork me on GitHub" target="_blank">GitLab</a> -
+                <a href="https://flask.palletsprojects.com/en/2.0.x" title="Python Flask Web" target="_blank">Flask</a> -
+                <a href="https://www.docker.com" title="Docker" target="_blank">Docker</a>
+            </small>
+        </p>
+    </footer>
+    {% endblock footer %}
+</main>
+
+<script src="/static/js/jquery-3.6.0.js"></script>
+<script src="/static/js/socket.io-3.0.5.js"></script>
+<script type=text/javascript>
+    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    // $SCRIPT_ROOT = 'http://127.0.0.1:5000'
+</script>
+{% block scripts %}{% endblock scripts %}
+
+</body>
+</html>

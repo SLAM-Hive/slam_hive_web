@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Dataset{% endblock %}
+
+{% block content %}
+    <br>
+    <div style="text-align:center">
+        <a class="button" href="{{ url_for('create_dataset') }}">
+            <input class="btn btn-primary" type="submit" value="New" >
+        </a>
+    </div>
+    <br>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Folder Name</th>
+                <th >Description</th>
+                <th>URL (Click to download)</th>
+                <th>Delete</th>   
+            </tr>
+        </thead>
+        <tbody>    
+            {% for dataset in datasets %}
+                <tr>
+                    <td>{{ dataset.id }}</td>
+                    <td>{{ dataset.name }}</td>
+                    <td><pre>{{dataset.description}}</pre> </td>
+                    <td><a href="{{ dataset.url }}">{{ dataset.url }}</a></td>
+                    <td>
+                        <form method="post" action="{{ url_for('delete_dataset', id=dataset.id) }}">
+                            {{ form.csrf_token }} 
+                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                        </form>  
+                    </td>   
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>
+{% endblock %}
+
+
+ 

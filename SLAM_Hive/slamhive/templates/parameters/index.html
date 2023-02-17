@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}AlgoConfig{% endblock %}
+
+{% block content %}
+    <br>
+    <div style="text-align:center">
+        <a class="button" href="{{ url_for('create_algoparam') }}">
+            <input class="btn btn-primary" type="submit" value="New" >
+        </a>
+    </div>
+    <br>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th >Decription</th>
+                <th>Type</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for param in params %}
+                <tr>
+                    <td>{{ param.id }}</td>
+                    <td>{{ param.name }}</td>
+                    <td><pre>{{param.description}}</pre> </td>
+                    <td>{{param.paramType}}   </td>
+                    <td>
+                        <form method="post" action="{{ url_for('delete_algoparam', id=param.id) }}">
+                            {{ form.csrf_token }} 
+                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                        </form>  
+                    </td>
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>
+{% endblock %}

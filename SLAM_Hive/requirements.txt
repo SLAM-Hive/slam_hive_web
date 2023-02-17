@@ -1,0 +1,32 @@
+click == 8.0.3
+cryptography == 36.0.1
+bootstrap-flask == 2.0.2
+docker == 2.7.0
+docker-py == 1.10.6
+eventlet == 0.33.1
+Flask == 2.0.2
+Flask-Bootstrap == 3.3.7.1
+Flask-Moment == 1.0.2
+Flask-SQLAlchemy == 2.5.1
+flask-migrate == 3.1.0
+flask-apscheduler == 1.12.3
+flask-socketio == 5.2.0
+flask-wtf == 1.0.0
+itsdangerous == 2.0.1
+Jinja2 == 3.0.3
+markupsafe == 2.0.1
+matplotlib == 3.5.3
+numpy == 1.23.1
+Werkzeug == 2.0.2
+jsonify == 0.5
+python-dotenv == 0.19.2
+pipenv == 2021.11.23
+pymysql == 1.0.2
+pyyaml == 5.4.1
+SQLAlchemy == 1.4.28
+visitor == 0.1.3
+
+
+
+
+

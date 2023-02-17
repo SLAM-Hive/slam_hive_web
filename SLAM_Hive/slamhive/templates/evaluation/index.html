@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+    <br>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Algorithm Name</th>
+                <th>Dataset</th>
+                <th>Configuration</th>
+                <th>Status</th>
+                <th>Show</th>
+                <th>Delete</th>
+                </th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for evaluation in evaluations %}
+                <tr>
+                    <td class="eval_id">{{ evaluation.id }}</td>
+                    <td>{{ evaluation.mappingTask.mappingTaskConf.algorithm.imageTag }}</td>
+                    <td>{{ evaluation.mappingTask.mappingTaskConf.dataset.name }}</td>
+                    <td>{{ evaluation.mappingTask.mappingTaskConf.id }}: {{evaluation.mappingTask.mappingTaskConf.name}}</td>
+                    {% if evaluation.state == 'Finished' %}
+                        <td style="color:#4CAF50">{{ evaluation.state }}</td>
+                    {% elif evaluation.state == 'Running' %}
+                        <td style="color:#445ef7">{{ evaluation.state }}</td>
+                    {% elif evaluation.state == 'Failed' %}
+                        <td style="color:#eb1d1d">{{ evaluation.state }}</td>
+                    {% else %}
+                        <td style="color:#f56ade">{{ evaluation.state }}</td>
+                    {% endif %}
+                    <td>
+                        <a class="button" href="{{ url_for('show_evaluate', id=evaluation.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Show">
+                        </a> 
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('delete_evaluate', id=evaluation.id) }}">
+                            {{ form.csrf_token }} 
+                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                        </form>
+                    </td>  
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+    var socket = io('/');
+    socket.on('update_eval_state', function(res) {
+        console.log(res.data);
+        alert(res.data);
+        location.reload();
+        });
+    });
+</script>
+
+<script>
+    $(function(){
+        $('#compare_button').click(function(){
+            var selected = document.getElementsByClassName("selected");
+            selected_dict = {}
+            for(var i=0; i<selected.length; i++){
+                if(selected[i].checked){
+                    selected_dict[i] = document.getElementsByClassName("eval_id")[i].innerHTML;
+                }        
+            }
+            var selected_json = JSON.stringify(selected_dict);
+            $.ajax({
+                    url: '/eval/compare',
+                    type: 'post',
+                    dataType: 'json',
+                    data: selected_json,
+                    success: function(data){
+                        window.location.href="/eval/compare/result/"+data;
+                    }
+            });
+        });       
+    })
+</script>
+{% endblock %}
+

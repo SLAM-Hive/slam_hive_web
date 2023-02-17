@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+{% block title %}MappingTaskConfig{% endblock %}
+
+{% block content %}
+    <br>    
+    <div style="text-align:center">
+        <a class="button" href="{{ url_for('create_config') }}">
+            <input class="btn btn-primary" type="submit" value="Create Config" >
+        </a>
+    </div>
+    <br>
+        {% for config in configs %}
+            <div class="card mb-3">
+                <small> ID: {{ config.id }} </small>
+                <p> <b>Name:</b> {{ config.name }} <br>
+                <b>Algorithm:</b> {{ config.algorithm.imageTag }} <br>
+                <b>Dataset:</b>  {{ config.dataset.name }}<br>
+                <b>Description:</b> {{ config.description }} <br>
+                <b>Parameter:</b></p>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Value </th>
+                        </tr>
+                    </thead>
+                    <tbody>    
+                        {% for paramValue in config.paramValues %}
+                            <tr>
+                                <td class="paramId">{{ paramValue.algoParam.id }}</td>
+                                <td >{{ paramValue.algoParam.name }}</td>
+                                <td><pre>{{paramValue.algoParam.description}}</pre></td>
+                                <td><pre>{{paramValue.value}}</pre></td>
+                            </tr> 
+                        {% endfor %}     
+                    </tbody>
+                </table>               
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <form method="post" action="{{ url_for('delete_config', id=config.id) }}">
+                            {{ form.csrf_token }} 
+                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                        </form>
+                        &nbsp;&nbsp;
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('copy_config', id=config.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Copy" >
+                        </a>
+                        &nbsp;&nbsp;
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('export_config', id=config.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Export Configuration" 
+                                onclick="return confirm('Are you sure?');">
+                        </a>
+                        &nbsp;&nbsp;
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('create_mappingtask', id=config.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Create MappingTask" 
+                                onclick="return confirm('Are you sure?');">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <br>
+        {% endfor %}     
+{% endblock %}   
+
+
+
+
+      
+      
+      
+     
+
+
+
+
+    
+
+  
+
+
+

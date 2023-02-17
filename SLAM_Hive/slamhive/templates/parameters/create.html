@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+
+{% block title %}AlgoConfig{% endblock %}
+
+{% block content %}
+    <br>
+    <h5 style="text-align: center"><b>Parameter Creation</b></h5>       
+    <br>
+    <div class="form-group">
+        {{ render_form(form, action=request.full_path) }}
+    </div>
+
+    Parameter Type explanation: 
+    <pre style="background-color:#EAEAEF; color:green; font-size:13px; line-height:20px; ">
+
+    <b>Dataset:</b>                     Example: cx: 100.0
+    name1: value1                         cy: 100.0
+    name2: value2                         fx: 100.0
+    ...                                   fy: 100.0
+
+    <b>Dataset matrix:</b>              Example: T_b_c: [0.01, -0.99, 0.01, -0.02,
+    name: [value1, value2, ...            0.99, 0.01, 0.02, -0.06,
+                    ..., value_n]         -0.02, 0.02, 0.99, 0.01]
+
+    <b>Dataset remap:</b>               Example: /slamhive/camera/rgb: /camera/rgb/image_color
+    name1: topic1                         /slamhive/camera/depth: /camera/depth/image
+    name2: topic2
+    ...
+
+    <b>Algorithm:</b>                   Example: Features: 100.0
+    name1: value1                         scaleFactor: 1.2
+    name2: value2                         nLevels: 8
+    ...                                     
+
+    <b>Algorithm remap:</b>             Example: rgb_topic: /slamhive/camera/rgb
+    name1: topic1                         dep_topic: /slamhive/camera/depth
+    name2: topic2
+    ...
+    </pre>
+{% endblock %}
