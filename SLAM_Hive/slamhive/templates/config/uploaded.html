@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+{% block title %}MappingTaskConfig{% endblock %}
+<!-- To do -->
+{% block content %}
+    <br>    
+    <!-- <img src="{{ url_for('static', filename= './images/trajectory.png') }}" width="100%" height="100%" alt="SLAM Picture"/> -->
+    <!-- <img src="{{ url_for('get_file', filename=filename) }}" width="90%" height="50%"> -->
+    {% for key,value in data.items() %}
+        
+        {% if isinstance(value,dict) %}
+            {{ key }}:<br> 
+            {% for key2,value2 in value.items() %}   
+                &nbsp;&nbsp;&nbsp;&nbsp;{{ key2 }}: {{ value2 }}<br>  
+            {% endfor %} 
+        {% else %}
+            {{ key }}: {{ value }}<br> 
+        {% endif %} 
+              
+    {% endfor %}  
+{% endblock %} 

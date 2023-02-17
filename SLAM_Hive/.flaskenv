@@ -1,0 +1,2 @@
+FLASK_APP=slamhive
+FLASK_ENV=development

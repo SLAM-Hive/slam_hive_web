@@ -1,0 +1,78 @@
+# This is part of SLAM Hive
+# Copyright (C) 2022 Yuanyuan Yang, Bowen Xu, Yinjie Li, Sören Schwertfeger, ShanghaiTech University. 
+
+# SLAM Hive is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# SLAM Hive is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with SLAM Hive.  If not, see <https://www.gnu.org/licenses/>.
+
+# yaml configuration
+version: '3'
+services:
+  flask:
+    container_name: slam_hive_web
+    build: .
+    ports:
+      - "5000:5000"
+      # - "80:80"
+    links:
+      - mysql
+    privileged: true
+    depends_on:
+      - mysql
+    volumes:
+      - ../slam_hive_algos:/slam_hive_algos
+      - ../slam_hive_datasets:/slam_hive_datasets
+      - ../slam_hive_results:/slam_hive_results
+      - ../slam_hive_configurations:/slam_hive_configurations
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    networks:
+      extnetwork:
+  mysql:
+    container_name: flask_mysql
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=SLAMHive1#
+      - MYSQL_DATABASE=slamhiveDB
+      # - MYSQL_HOST=172.30.0.3
+    privileged: true
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./db/data:/var/lib/mysql
+      - ./db/sql:/docker-entrypoint-initdb.d
+    restart: always
+    networks:
+      extnetwork:
+        ipv4_address: 172.40.0.3
+  cadvisor:
+    image: google/cadvisor
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - "/dev/kmsg:/dev/kmsg"
+    ports:
+      - 8085:8080
+    restart: always
+    networks:
+      extnetwork:
+networks:
+  extnetwork:
+    ipam:
+      config:
+        - subnet: 172.40.0.0/16

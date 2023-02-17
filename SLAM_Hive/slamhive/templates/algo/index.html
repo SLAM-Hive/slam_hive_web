@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+<!-- {% from 'bootstrap4/pagination.html' import render_pager %} -->
+{% block title %}Algorihtm{% endblock %}
+
+{% block content %}
+    <br>
+    <div style="text-align:center">
+        <a class="button" href="{{ url_for('create_algo') }}">
+            <input class="btn btn-primary" type="submit" value="New" >
+        </a>
+    </div>
+    <br>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Image Name</th>
+                <th>URL (Browse to get the mapping scripts and install docker image)</th>
+                <th>Description</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for algo in algos %}
+                <tr>
+                    <td>{{ algo.id  }}</td>
+                    <td>{{ algo.name }}:{{algo.imageTag}}</td>
+                    <!-- <td>{{ algo.imageTag }}</td> -->
+                    <td><a href="{{ algo.dockerUrl }}">{{ algo.dockerUrl }}</a></td>
+                    <td><pre>{{ algo.description }}</pre> </td>
+                    <td>
+                        <form method="post" action="{{ url_for('delete_algo', id=algo.id) }}">
+                            {{ form.csrf_token }} 
+                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                        </form> 
+                    </td>
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>    
+{% endblock %}
+
+
+

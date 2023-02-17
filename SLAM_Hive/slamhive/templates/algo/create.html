@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+
+{% block title %}Algorihtm{% endblock %}
+
+{% block content %}
+    <br>
+    <h5 style="text-align: center"><b>Algorithm Creation</b></h5>
+    <br>
+    <div class="form-group">
+        {{ render_form(form, action=request.full_path) }}
+    </div>   
+{% endblock %}
+
+
+    <!-- <form method="post">
+        {{ form.csrf_token }}
+        <div class="form-group">
+            {{ form.name.label }} 
+            {{ form.name(class='form-control') }} 
+        </div>
+        <div class="form-group">
+            {{ form.mode.label }} <br>
+            {{ form.mode(class='form-control') }}         
+        </div>
+        <div class="form-group">
+            {{ form.imageTag.label }} <br>
+            {{ form.imageTag(class='form-control') }}         
+        </div>
+        <div class="form-group">
+            {{ form.dockerUrl.label }} <br>
+            {{ form.dockerUrl(class='form-control') }}         
+        </div>
+        <div class="form-group">
+            {{ form.sourceUrl.label }} <br>
+            {{ form.sourceUrl(class='form-control') }}         
+        </div>
+        <div class="form-group">
+            {{ form.sourceTag.label }} <br>
+            {{ form.sourceTag(class='form-control') }}         
+        </div>
+        <div class="form-group">
+          {{ form.configPath.label }} <br>
+          {{ form.configPath(class='form-control') }}         
+        </div>
+        <div class="form-group">
+            {{ form.description.label }} 
+            {{ form.description(class='form-control') }} 
+        </div>
+        {{ form.submit(class='btn btn-primary') }} <br>
+    </form> -->
+
+

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+{% block title %}MappingTaskConfig{% endblock %}
+<!-- To do -->
+{% block content %}
+    <br>    
+    <form method="post" enctype="multipart/form-data">
+        {{ render_form(form, action=request.full_path) }}   
+    </form>
+    <br>
+    <div>
+        <b>Here is an example of Configuration YAML file for reference:</b>
+    <br>
+<pre style="background-color:#EAEAEF; color:green; font-size:13px; line-height:20px; ">
+slam-hive-algorithm: orb-slam2-ros
+dataset: dataset
+/camera/image_raw: /cam0/image_raw
+/cam0/image_raw: 
+    cx: 367.215
+    cy: 248.375
+    fx: 458.654
+    fy: 457.296
+    k1: -0.28340811
+    k2: 0.07395907 
+    p1: 0.00019359 
+    p2: 1.76187114e-05 
+    fps: 20.0
+    RGB: 1
+ORBextractor.iniThFAST: 4
+ORBextractor.minThFAST: 5
+ORBextractor.nFeatures: 6
+ORBextractor.nLevels: 7
+ORBextractor.scaleFactor: 7
+</pre>
+    </div>  
+{% endblock %} 

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+
+{% block title %}Dataset{% endblock %}
+
+{% block content %}
+    <br>
+    <h5 style="text-align: center"><b>Dataset Creation</b></h5>
+    <br>
+    <div class="form-group">
+        {{ render_form(form, action=request.full_path) }}
+    </div>   
+{% endblock %}
+
+
+

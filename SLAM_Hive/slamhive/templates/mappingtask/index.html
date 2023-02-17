@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}MappingTask{% endblock %}
+
+{% block content %}
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Algorithm</th>
+            <th>Dataset</th>
+            <th>Configuration</th>
+            <th>Create Time</th>
+            <th>State</th>
+            <th>Delete</th>
+            <th>Evaluation</th>
+        </tr>
+    </thead>
+    <tbody>    
+        {% for mappingtask in mappingtasks %}
+            <tr>
+                <td>{{ mappingtask.id }}</td>
+                <td>{{ mappingtask.mappingTaskConf.algorithm.imageTag }}</td>
+                <td>{{ mappingtask.mappingTaskConf.dataset.name }}</td>
+                <td>{{ mappingtask.mappingTaskConf.id }}: {{mappingtask.mappingTaskConf.name}}</td>
+                <td>{{ mappingtask.time }}</td>
+                {% if mappingtask.state == 'Finished' %}
+                    <td style="color:#4CAF50">{{ mappingtask.state }}</td>
+                {% elif mappingtask.state == 'Running' %}
+                    <td style="color:#445ef7">{{ mappingtask.state }}</td>
+                {% elif mappingtask.state == 'Failed' %}
+                    <td style="color:#eb1d1d">{{ mappingtask.state }}</td>
+                {% else %}
+                    <td style="color:#f56ade">{{ mappingtask.state }}</td>
+                {% endif %}
+                <td>
+                    <form method="post" action="{{ url_for('delete_mappingtask', id=mappingtask.id) }}">
+                        {{ form.csrf_token }} 
+                        {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                    </form>
+                </td>
+                {% if mappingtask.state == 'Finished' and mappingtask.evaluation == None %}
+                    <td>
+                        <a class="button" href="{{ url_for('create_evaluate', id=mappingtask.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Evaluate"
+                            onclick="return confirm('Are you sure?');">
+                        </a> 
+                    </td>
+                {% elif  mappingtask.evaluation != None %}
+                    <td></td>
+                {% else %}
+                <td></td>
+                {% endif %}
+            </tr> 
+        {% endfor %}     
+    </tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+    var socket = io('/');
+    socket.on('update_state', function(res) {
+        console.log(res.data);
+        alert(res.data);
+        location.reload();
+        });
+    });
+</script>
+{% endblock %}
+
+

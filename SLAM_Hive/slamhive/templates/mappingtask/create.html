@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+
+{% block title %}MappingTask{% endblock %}
+
+{% block content %}
+    <br>
+    <div class="form-group">
+        {{ render_form(form, action=request.full_path) }}
+    </div>
+{% endblock %}
