@@ -39,7 +39,7 @@ services:
       extnetwork:
   mysql:
     container_name: flask_mysql
-    image: mysql:latest
+    image: mysql:8.0.31
     environment:
       - MYSQL_ROOT_PASSWORD=SLAMHive1#
       - MYSQL_DATABASE=slamhiveDB

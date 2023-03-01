@@ -5,16 +5,17 @@ Install Docker and docker-compose: <https://www.docker.com>
 ## 2. Build SLAM algorithm images
 We provide some SLAM algorithms Dockerfile and running scripts, here is an example to build an image:
 ```
-$ mkdir -p SLAM_Hive/slam_hive_configurations
-$ cd SLAM_Hive
-$ git clone https://github.com/SLAM-Hive/slam_hive_web.git 
-$ git clone https://github.com/SLAM-Hive/slam_hive_datasets.git 
-$ git clone https://github.com/SLAM-Hive/slam_hive_results.git
-$ git clone https://github.com/SLAM-Hive/slam_hive_algos.git
-$ cd SLAM_Hive/slam_hive_algos
-$ git clone https://github.com/SLAM-Hive/orb-slam2-ros-mono.git
-$ sudo chmod +x install.sh
-$ ./install.sh
+mkdir -p SLAM_Hive/slam_hive_configurations
+cd SLAM_Hive
+git clone https://github.com/SLAM-Hive/slam_hive_web.git 
+git clone https://github.com/SLAM-Hive/slam_hive_datasets.git 
+git clone https://github.com/SLAM-Hive/slam_hive_results.git
+mkdir slam_hive_algos
+cd slam_hive_algos
+git clone https://github.com/SLAM-Hive/orb-slam2-ros-mono.git
+cd orb-slam2-ros-mono
+sudo chmod +x install.sh
+./install.sh
 ```
 You can check whether the image is successfully built as follows:
 ```
