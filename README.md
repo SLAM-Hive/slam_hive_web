@@ -5,8 +5,14 @@ Install Docker and docker-compose: <https://www.docker.com>
 ## 2. Build SLAM algorithm images
 We provide some SLAM algorithms Dockerfile and running scripts, here is an example to build an image:
 ```
-$ git clone https://github.com/STAR-Center/SLAM-Hive.git SLAM_Hive
-$ cd SLAM_Hive/slam_hive_algos/orb-slam2-ros-mono
+$ mkdir -p SLAM_Hive/slam_hive_configurations
+$ cd SLAM_Hive
+$ git clone https://github.com/SLAM-Hive/slam_hive_web.git 
+$ git clone https://github.com/SLAM-Hive/slam_hive_datasets.git 
+$ git clone https://github.com/SLAM-Hive/slam_hive_results.git
+$ git clone https://github.com/SLAM-Hive/slam_hive_algos.git
+$ cd SLAM_Hive/slam_hive_algos
+$ git clone https://github.com/SLAM-Hive/orb-slam2-ros-mono.git
 $ sudo chmod +x install.sh
 $ ./install.sh
 ```
@@ -35,6 +41,7 @@ slam-hive-algorithm    orb-slam3-ros-stereo             28c13955a331   9 days ag
 slam-hive-algorithm    orb-slam3-ros-stereo-inertial    28c13955a331   9 days ago      4.17GB
 slam-hive-algorithm    orb-slam3-ros-rgbd               28c13955a331   9 days ago      4.17GB
 slam-hive-algorithm    lio-sam                          99b1395a3b41   9 days ago      3.15GB
+slam-hive-algorithm    aloam                            34fbdj5a3b41   9 days ago      3.15GB
 ```
 If the image construction speed is very slow, it is recommended to find the Dockerfile in the corresponding folder and change the source list: `/etc/apt/sources.list`
 
