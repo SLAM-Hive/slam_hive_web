@@ -88,7 +88,7 @@ app.config['cluster'] = ['/mappingtask/create/single', '/mappingtask/create/batc
 app.config['aliyun'] = ['/mappingtask/create/batch_aliyun']
 # view_only
 # need to change the right version name when start the project
-app.config['CURRENT_VERSION'] = 'workstation'
+app.config['CURRENT_VERSION'] = 'view_only'
 
 
 
