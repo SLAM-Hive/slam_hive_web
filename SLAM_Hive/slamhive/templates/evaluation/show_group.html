@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}{% endblock %}
+
+{% block content %}
+
+    <!-- <br>
+    
+    <div style="text-align:left;">
+        <a class="button" href="{{ url_for('index_combination_config') }}" >
+            <input class="btn btn-primary" type="submit" value="Return" >
+        </a>
+    </div> -->
+    <br>
+    <div class="card mb-3">
+        <small class="group_configId" id="group_id"> ID:{{ group_config.id }}</small> <br>
+        <p> <b>Name:</b> {{ group_config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+        <b>Description:</b> <pre>{{ group_config.description }} </pre> <br>
+    </div>
+
+    <div>
+    <h5>Generated scatter diagram</h5>
+<!--提交图标生成请求-->
+    <table class="table table-bordered">
+        <tr>
+            <td>
+                x axis: 
+            </td>
+
+            <td>
+                <select id="axis_x_1">
+                    <option value="ATE-rmse">ATE-rmse</option>
+                    <option value="ATE-mean">ATE-mean</option>
+                    <option value="ATE-median">ATE-median</option>
+                    <option value="ATE-std">ATE-std</option>
+                    <option value="ATE-min">ATE-min</option>
+                    <option value="ATE-max">ATE-max</option>
+                    <option value="ATE-sse">ATE-sse</option>
+                   
+                    <option value="RPE-rmse">RPE-rmse</option>
+                    <option value="RPE-mean">RPE-mean</option>
+                    <option value="RPE-median">RPE-median</option>
+                    <option value="RPE-std">RPE-std</option>
+                    <option value="RPE-min">RPE-min</option>
+                    <option value="RPE-max">RPE-max</option>
+                    <option value="RPE-sse">RPE-sse</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                y axis: 
+            </td>
+            <td>
+                <select id="axis_y_1">
+                    <option value="CPU-mean">CPU-mean</option>
+                    <option value="CPU-max">CPU-max</option>
+                   
+                    <option value="Memory-max">Memory-max</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <button id="button" onclick="createDiagram1()" class='btn btn-primary'>Create Diagram 1</button>
+    <button id="button" onclick="showDiagram1Online()" class='btn btn-primary'>Show Dynamic Diagram</button>
+    <br>
+    <div id = "search_result"></div>
+    
+    </div>
+
+
+    <br>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Show Details</th>
+                <th>Task Id</th>
+                <th>Eval Id</th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for config in configs %}
+                <tr>
+                    <td class="config_id">{{ config.id }}</td>
+                    <td>{{ config.name}}</td>
+                    {% if mappingTasks_number[config.id] != 0 %}
+                        <td style="color:#445ef7">already create mapping task</td>
+                    {% else %}
+                        <td style="color:#eb2214">need to create mapping task</td>
+                    {% endif %}
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a class="button" href="{{ url_for('show_config', id=config.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
+                            </a>
+                            &nbsp;&nbsp;
+                        </div>             
+                    </td>
+                    {% if mappingTasks_number[config.id] != 0 %}
+                    <td class="task_id">{{ config.mappingTasks[0].id }}</td>
+                    {% else %}
+                    <td class="task_id">None</td>
+                    {% endif %} 
+
+                    {% if evals_number[config.id] != 0 %}
+                    <td class="task_id">{{ config.mappingTasks[0].evaluation.id }}</td>
+                    {% else %}
+                    <td class="task_id">None</td>
+                    {% endif %} 
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>
+    
+    <div class="btn-group" role="group">
+
+        <a class="button" href="{{ url_for('submit_group_multi_eval', id=group_config.id) }}">
+            <input class='btn btn-default btn-sm' type="submit" value="finish all the single evaluation" >
+        </a>
+        &nbsp;&nbsp;
+        <a class="button" href="{{ url_for('submit_group_multi_eval', id=group_config.id) }}">
+            <input class='btn btn-default btn-sm' type="submit" value="create a multi evaluation of this group" >
+        </a>
+        &nbsp;&nbsp;
+
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
+<script>
+    $(document).ready(function() {
+    var socket = io('/');
+    socket.on('update_eval_state', function(res) {
+        console.log(res.data);
+        alert(res.data);
+        location.reload();
+        });
+    });
+
+    function createDiagram1()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_1 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_1 option:selected")
+        values_json['y-axis'] = options.val()
+        values_json['group_id'] = document.getElementById('group_id').innerHTML.split(':')[1]
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/eval/diagram/dig1',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                success: function(data){
+                    if(data.result == 'success') {
+                        alert("Save successfully!")
+                    } else if (data.result == 'exist') {
+                        alert("Already exist!")
+                    } else if(data.result == 'version error') {
+                        alert("Version error!")
+                    }
+                }
+            }
+        )
+    }
+    function showDiagram1Online()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_1 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_1 option:selected")
+        values_json['y-axis'] = options.val()
+        values_json['group_id'] = document.getElementById('group_id').innerHTML.split(':')[1]
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/eval/diagram/dig1/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                complete: function(data){
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result");
+                        console.log("ss")
+                        while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        {
+                            div.removeChild(div.firstChild);
+                        }
+                        console.log("ss")
+                        $("#search_result").append(data.responseText);
+                        console.log("ss")
+                    }
+            }
+        )
+    }
+
+</script>
+
+{% endblock %}
+

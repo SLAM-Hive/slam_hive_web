@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+
+{% block title %}CustomAnalysis{% endblock %}
+
+{% block content %}
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/customanalysis:example" class="floating-button"  target="_blank">Wiki Link</a>
+
+<br>
+    <h5 style="text-align: center"><b>Custom Analysis Group Creation</b></h5>       
+    <br>
+
+    <table>
+        <tbody>
+            <tr>
+                <td>
+                    <label>Input Yaml File: </label>
+                    <button id="button" class='btn btn-primary'>Save</button>
+                </td>
+                <td>
+                    <label>Yaml File Type explanation: </label>
+                </td>
+            </tr>
+            <tr>
+                <td style="min-width:50% ">
+                    <div class="form-group" style="min-width:50% ">
+                        
+                        <textarea rows="95" name="description" id="yaml_file" class='form-control' style="min-width:700px "></textarea>
+                    </div>
+                </td>
+
+                <td width="50%">
+                    <div >
+                        <pre style="background-color:#EAEAEF; color:green; font-size:13px; line-height:20px; max-width:60% ">
+    <b>group_name</b>:
+    
+    <b>group_description</b>:
+    
+    <b>evaluation_form</b>:
+    group_name: Simple_example  # custom analysis task name.
+
+    group_description: xxxxxx # some simple description of the task.
+    
+    evaluation_form:
+      # you should choose 0-3 based on your configurations.
+      algorithm_dataset_type: 0 # 0: same_algorithm_same_dataset.          can choose: 1 2 3 4 6 7 8
+                              # 1: different_algorithm_same dataset        can choose: 1 2 3 4 6 7
+                              # 2: same_algorithm_different_dataset        can choose: 3 6 7
+                              # 3: different_algorithm_different_dataset.  can choose: 3 6 7
+      1_trajectory_comparison: # compare the trajectories.
+        choose: 0 # choose this analysis (0) or not (1)
+      
+      2_accuracy_metrics_comparison: # compare the ATE and RPE metrics of trajectories
+        choose: 0  
+      
+      3_accuracy_metrics_comparison: # generate a histogram of different (algorithm + dataset) group.
+        choose: 0
+        calculate_method: 1 # 0: average (because one algo + one dataset may include different configs)
+                          # 1: choose the best one   
+                          # then for each (algorithm, dataset), get one configuration, then calculate the average value
+        metric: ate_rmse # eg: ATE-RMSE
+        algorithm_id: [12] # choose the algorithms by ID
+        dataset_id: [2] # choose the dataset sequences by ID
+      
+      4_usage_metrics_comparison: # compare the CPU and Memory usage.
+        choose: 0  
+    
+      6_scatter_diagram: # generate a scatter to show the metrics of different configurations' task.
+        choose: 1
+        x-axis: general+image_frequency # X axis's metric
+        y-axis: ate_mean # Y axis's metric
+        # You can choose: 1) Evo metrics; 2) Resource Usage metrics; 3) Configuration parameters (provide the parameter template's name; and you should choose one that all configurations use this template).
+        
+      7_3d_scatter_diagram: # 3D version of the scatter
+        choose: 1
+        x-axis: general+image_width
+        y-axis: general+imu_frequency
+        z-axis: ate_mean
+      # For the scatter and 3D scatter, when you create a analysis, you can also use this task to create more scatters with other axis's metrics; And you can also see the online dynamic scatter on the webpage.  
+        
+      8_repeatability_test: # Test one configuration's stability.
+        choose: 0 # If you use this analysis, you should only choose one configuration.
+        metric: ate_mean
+     
+    # 
+    configuration_choose: # implicit limitation：chosen configs has running task and evaluation
+      # three ways to choose confg
+      configuration_id: [] # provide configurations id
+      comb_configuration_id: [72] # provide combination configurations id (Equal to choose all configurations ID contained by these comb configs).
+      limitation_rules:   # by a rule;
+        algorithm_id: [12, 13]
+        dataset_id: [2,3]
+        parameters_value: ["nFeatures < 4000"]
+        evaluation_value:
+          ate_rmse_nolimitation: 1              # 0 or 1
+          ate_rmse_minimum:                   # if just minimum and no maximum, can just fill the minimum
+          ate_rmse_maximum:
+          ate_mean_nolimitation:    1           # 0 or 1
+          ate_mean_minimum:                  
+          ate_mean_maximum:
+          ate_median_nolimitation:   1           # 0 or 1
+          ate_median_minimum:                  
+          ate_median_maximum:
+          ate_std_nolimitation:   1           # 0 or 1
+          ate_std_minimum:                  
+          ate_std_maximum:
+          ate_min_nolimitation:    1          # 0 or 1
+          ate_min_minimum:                  
+          ate_min_maximum:
+          ate_max_nolimitation:  1            # 0 or 1
+          ate_max_minimum:                  
+          ate_max_maximum:
+          ate_sse_nolimitation:    1          # 0 or 1
+          ate_sse_minimum:                  
+          ate_sse_maximum:
+          rpe_rmse_nolimitation:     1         # 0 or 1
+          rpe_rmse_minimum:                   # if just minimum and no maximum, can just fill the minimum
+          rpe_rmse_maximum:
+          rpe_mean_nolimitation:    1          # 0 or 1
+          rpe_mean_minimum:                  
+          rpe_mean_maximum:
+          rpe_median_nolimitation:    1          # 0 or 1
+          rpe_median_minimum:                  
+          rpe_median_maximum:
+          rpe_std_nolimitation:    1          # 0 or 1
+          rpe_std_minimum:                  
+          rpe_std_maximum:
+          rpe_min_nolimitation:    1          # 0 or 1
+          rpe_min_minimum:                  
+          rpe_min_maximum:
+          rpe_max_nolimitation:   1           # 0 or 1
+          rpe_max_minimum:                  
+          rpe_max_maximum:
+          rpe_sse_nolimitation:     1         # 0 or 1
+          rpe_sse_minimum:                  
+          rpe_sse_maximum:
+          cpu_max_nolimitation:    1          # 0 or 1
+          cpu_max_minimum:                  
+          cpu_max_maximum:
+          cpu_mean_nolimitation:    1          # 0 or 1
+          cpu_mean_minimum:                  
+          cpu_mean_maximum:
+          ram_max_nolimitation:     1         # 0 or 1
+          ram_max_minimum:                  
+          ram_max_maximum:
+      combination_rule:   # how to combine three ways：U - union set; I - intersection set; complement set;
+        first_one: [1]
+        first_rule: ["U"]
+        second_one: [0,2]
+        second_rule: ["I"] # (1) - (0 I 2)
+                        </pre>
+                    </div>
+                        
+                </td>
+
+
+
+            </tr>
+
+
+        </tbody>
+    </table>
+
+
+
+   
+{% endblock %}
+{% block scripts %}    
+    <script>
+        $(function(){
+          $('#button').click(function(){
+    var values_json = {};
+    var k = 0;
+    var format_check = true;
+    if(format_check){
+        // Record MappingTaskConfig Name & Description
+        values_json[k] = document.getElementById('yaml_file').value;
+
+        var parameter_values = JSON.stringify(values_json);
+        // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax({
+            url: '/analysis/create/submit',
+            type: 'post',
+            timeout: 60 * 5 * 1000, // 60s
+            dataType: 'json',
+            data: parameter_values,
+            beforeSend: function() {
+                // Show the waiting dialog
+                $('body').append('<div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; padding: 20px; background-color: #fff; border: 8px solid #000; text-align: center;">Waiting... You task ID will return in a few time.</div>');
+            },
+            complete: function() {
+                // Remove the waiting dialog
+                $('#loading').remove();
+            },
+            success: function(data){
+                // alert("Save successfully!");
+                // alert(data);
+                // console.log(data.result)
+
+                che = data.result.split("@@@")[0]
+
+                if(che == 'success') {
+                    alert("Your task ID: "+data.result.split("@@@")[1]+", Please remember it!");
+                } else {
+                    alert(data.result);
+                }
+
+                btnfun();
+            },
+            error: function(xhr, status, error) {
+        if (status === "timeout") {
+            console.log("The request timed out.");
+        } else {
+            console.log("An error occurred: " + status + " " + error);
+        }
+    }
+        });
+    }
+});
+        })
+
+    </script>
+    <script>
+        function btnfun(){
+            $('#button').attr('disabled', 'disabled');
+        }
+    </script>
+{% endblock %}
+
+

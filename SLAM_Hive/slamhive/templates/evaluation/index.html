@@ -2,51 +2,257 @@
 {% block title %}Evaluate{% endblock %}
 
 {% block content %}
-    <br>
-    <table class="table table-bordered">
-        <thead>
+<br>  
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/evaluation" class="floating-button"  target="_blank">Wiki Link</a>
+
+
+<table class="table table-bordered" sytle="border-collapse: collapse;" >
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>    
             <tr>
-                <th>Id</th>
-                <th>Algorithm Name</th>
-                <th>Dataset</th>
-                <th>Configuration</th>
-                <th>Status</th>
-                <th>Show</th>
-                <th>Delete</th>
-                </th>
-            </tr>
-        </thead>
-        <tbody>    
-            {% for evaluation in evaluations %}
-                <tr>
-                    <td class="eval_id">{{ evaluation.id }}</td>
-                    <td>{{ evaluation.mappingTask.mappingTaskConf.algorithm.imageTag }}</td>
-                    <td>{{ evaluation.mappingTask.mappingTaskConf.dataset.name }}</td>
-                    <td>{{ evaluation.mappingTask.mappingTaskConf.id }}: {{evaluation.mappingTask.mappingTaskConf.name}}</td>
-                    {% if evaluation.state == 'Finished' %}
-                        <td style="color:#4CAF50">{{ evaluation.state }}</td>
-                    {% elif evaluation.state == 'Running' %}
-                        <td style="color:#445ef7">{{ evaluation.state }}</td>
-                    {% elif evaluation.state == 'Failed' %}
-                        <td style="color:#eb1d1d">{{ evaluation.state }}</td>
-                    {% else %}
-                        <td style="color:#f56ade">{{ evaluation.state }}</td>
-                    {% endif %}
-                    <td>
-                        <a class="button" href="{{ url_for('show_evaluate', id=evaluation.id) }}">
-                            <input class='btn btn-default btn-sm' type="submit" value="Show">
-                        </a> 
-                    </td>
-                    <td>
-                        <form method="post" action="{{ url_for('delete_evaluate', id=evaluation.id) }}">
-                            {{ form.csrf_token }} 
-                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
-                        </form>
-                    </td>  
-                </tr> 
-            {% endfor %}     
-        </tbody>
-    </table>
+                <td >
+                    <div style="text-align:left;">
+                        <a class="button" href="{{ url_for('index_evaluate_single') }}" >
+                            <input class="btn btn-primary" type="submit" value="Jump" >
+                        </a>
+                    </div>
+                </td>
+                <td >Single evaluation.</td>
+            </tr>  
+
+
+            <tr>
+                <td >
+                    <div style="text-align:left;">
+                        <a class="button" href="{{ url_for('index_evaluate_multi') }}" >
+                            <input class="btn btn-primary" type="submit" value="Jump" >
+                        </a>
+                    </div>
+                </td>
+                <td >Multi evaluation.</td>
+            </tr>  
+
+            <!-- <tr>
+                <td >
+                    <div style="text-align:left;">
+                        <a class="button" href="{{ url_for('index_evaluate_group') }}" >
+                            <input class="btn btn-primary" type="submit" value="Jump" >
+                        </a>
+                    </div>
+                </td>
+                <td >Show Evaluation in Group.</td>
+            </tr>   -->
+
+    </tbody>
+</table>  
+
+
+
+<br>
+
+<div>
+    <h4>Search</h4>
+</div>
+<div style="border: 2px  solid #020202; padding:10px; width: 85%;">
+    <div style="width: 100%">
+        <br>
+        <h5>Configurations Related Search</h5>
+        <table id="algo_table" class="table table-bordered" sytle="border-collapse: collapse;" >
+            <tbody id="algo_table_body">    
+                    <tr>
+                        <td>Algorithm</td>
+                        <td >
+                            <select autofocus name="algo_id" class='form-control' multiple="multiple">
+                                <option selected="selected" value="All">All</option>
+                                {% for algo in algos %}
+                                    <option selected="selected" value="{{algo.id}}">{{algo.imageTag}}</option> 
+                                {% endfor %} 
+                            </select>
+                        </td>
+                    </tr>   
+                    <tr>
+                        <td>Dataset</td>
+                        <td>
+                            <select autofocus name="dataset_id" class='form-control'  multiple="multiple">
+                                <option selected="selected" value="All">All</option>
+                                {% for dataset in datasets %}
+                                    <option selected="selected" value="{{dataset.id}}">{{dataset.name}}</option> 
+                                {% endfor %} 
+                            </select>
+                        </td>
+                    </tr>  
+                    <tr>
+                        <td>Parameters</td>
+                        <td>
+                            <textarea id="parameter_id" rows="5" class="value" cols="100" placeholder="input the key: value..."></textarea>
+                        </td>
+                    </tr>    
+
+            </tbody>
+        </table>  
+        <br>
+        <h5>ATE&RPE Related Search</h5>
+        <table id="algo_table" class="table table-bordered" sytle="border-collapse: collapse;" >
+            <thead>
+                <td>Metrics</td>
+                <td>Minimum</td>
+                <td>Maximum</td>
+                <td>No Limitation</td>
+            </thead>
+            <tbody id="ate_rpe_table_body">    
+                    <tr>
+                        <td>ATE - RMSE</td>
+                        <td ><input type="text" name="traj" id="ate_rmse_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_rmse_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_rmse_nolimitation" checked="checked"></td>
+
+                    </tr>
+                    <tr>
+                        <td>ATE - MEAN</td>
+                        <td ><input type="text" name="traj" id="ate_mean_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_mean_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_mean_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>ATE - MEDIAN</td>
+                        <td ><input type="text" name="traj" id="ate_median_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_median_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_median_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>ATE - STD</td>
+                        <td ><input type="text" name="traj" id="ate_std_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_std_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_std_nolimitation" checked="checked"></td>
+                    </tr>  
+                    <tr>
+                        <td>ATE - MIN</td>
+                        <td ><input type="text" name="traj" id="ate_min_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_min_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_min_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>ATE - MAX</td>
+                        <td ><input type="text" name="traj" id="ate_max_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_max_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_max_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>ATE - SSE</td>
+                        <td ><input type="text" name="traj" id="ate_sse_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ate_sse_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ate_sse_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>RPE - RMSE</td>
+                        <td ><input type="text" name="traj" id="rpe_rmse_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_rmse_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_rmse_nolimitation" checked="checked"></td>
+
+                    </tr>
+                    <tr>
+                        <td>RPE - MEAN</td>
+                        <td ><input type="text" name="traj" id="rpe_mean_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_mean_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_mean_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>RPE - MEDIAN</td>
+                        <td ><input type="text" name="traj" id="rpe_median_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_median_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_median_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>RPE - STD</td>
+                        <td ><input type="text" name="traj" id="rpe_std_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_std_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_std_nolimitation" checked="checked"></td>
+                    </tr>  
+                    <tr>
+                        <td>RPE - MIN</td>
+                        <td ><input type="text" name="traj" id="rpe_min_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_min_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_min_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>RPE - MAX</td>
+                        <td ><input type="text" name="traj" id="rpe_max_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_max_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_max_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>RPE - SSE</td>
+                        <td ><input type="text" name="traj" id="rpe_sse_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="rpe_sse_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="rpe_sse_nolimitation" checked="checked"></td>
+                    </tr>
+
+            </tbody>
+        </table>  
+        <br>
+        <h5>Performance Related Search</h5>
+        <table id="algo_table" class="table table-bordered" sytle="border-collapse: collapse;" >
+            <thead>
+                <td>Metrics</td>
+                <td>Minimum</td>
+                <td>Maximum</td>
+                <td>No Limitation</td>
+            </thead>
+            <tbody id="performance_table_body">    
+                    <tr>
+                        <td>CPU - Max</td>
+                        <td ><input type="text" name="traj" id="cpu_max_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="cpu_max_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="cpu_max_nolimitation" checked="checked"></td>
+
+                    </tr>
+                    <tr>
+                        <td>CPU - Mean</td>
+                        <td ><input type="text" name="traj" id="cpu_mean_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="cpu_mean_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="cpu_mean_nolimitation" checked="checked"></td>
+                    </tr>
+                    <tr>
+                        <td>RAM - Max</td>
+                        <td ><input type="text" name="traj" id="ram_max_minimum" class='form-control'></td>
+                        <td ><input type="text" name="traj" id="ram_max_maximum" class='form-control'></td>
+                        <td><input class="selected" type="checkbox" name="traj" id="ram_max_nolimitation" checked="checked"></td>
+                    </tr>
+            </tbody>
+        </table>  
+        <input class="btn btn-primary" type="submit" value="Search" onclick="search()">
+    </div>
+    <div id = "search_result"></div>
+
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -62,6 +268,235 @@
 </script>
 
 <script>
+    function check_legal(minimum, maximum, nolimitation) {
+        if(nolimitation == true) {
+            if(minimum != "" || maximum != "") {
+                alert("You can not choose 'No Limitation' and input number at the same time!");
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            if(minimum == "") {
+                if(maximum == "") {
+                    alert("Please input the number if you want to limit some metrics!");
+                    return false;
+                } else {
+                    if(!isNaN(maximum)) {
+                        return true;
+                    } else {
+                        alert("Please input an legal number!");
+                        return false;
+                    }
+                }
+            } else {
+                if(isNaN(minimum)) {
+                    alert("Please input an legal number!");
+                    return false;
+                } else {
+                    if(maximum == "") {
+                        return true;
+                    } else {
+                        if(isNaN(maximum)) {
+                            alert("Please input an legal number!");
+                            return false;
+                        } else {
+                            if(parseFloat(maximum) < parseFloat(minimum)) {
+                                alert("Maximum must be greater or equal to the Minimum!");
+                                return false;
+                            } else {
+                                return true;
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    function search(){
+    algo_list = $('select[name="algo_id"]').val();
+    dataset_list = $('select[name="dataset_id"]').val();
+    parameters = document.getElementById('parameter_id').value;
+    // console.log(algo_list)
+    // console.log(dataset_list)
+    // console.log(parameters)
+    var value_json = {};
+    //configuration related
+    value_json['algo_list'] = algo_list
+    value_json['dataset_list'] = dataset_list
+    value_json['parameters'] = parameters
+
+    //traj ralated
+    ate_rmse_minimum = document.getElementById('ate_rmse_minimum').value.trim();
+    ate_rmse_maximum = document.getElementById('ate_rmse_maximum').value.trim();
+    ate_rmse_nolimitation = document.getElementById('ate_rmse_nolimitation').checked
+    if(!check_legal(ate_rmse_minimum, ate_rmse_maximum, ate_rmse_nolimitation)) return ;
+    value_json['ate_rmse_minimum'] = ate_rmse_minimum
+    value_json['ate_rmse_maximum'] = ate_rmse_maximum
+    value_json['ate_rmse_nolimitation'] = ate_rmse_nolimitation
+
+    ate_mean_minimum = document.getElementById('ate_mean_minimum').value.trim();
+    ate_mean_maximum = document.getElementById('ate_mean_maximum').value.trim();
+    ate_mean_nolimitation = document.getElementById('ate_mean_nolimitation').checked
+    if(!check_legal(ate_mean_minimum, ate_mean_maximum, ate_mean_nolimitation)) return ;
+    value_json['ate_mean_minimum'] = ate_mean_minimum
+    value_json['ate_mean_maximum'] = ate_mean_maximum
+    value_json['ate_mean_nolimitation'] = ate_mean_nolimitation
+
+    ate_median_minimum = document.getElementById('ate_median_minimum').value.trim();
+    ate_median_maximum = document.getElementById('ate_median_maximum').value.trim();
+    ate_median_nolimitation = document.getElementById('ate_median_nolimitation').checked
+    if(!check_legal(ate_median_minimum, ate_median_maximum, ate_median_nolimitation)) return ;
+    value_json['ate_median_minimum'] = ate_median_minimum
+    value_json['ate_median_maximum'] = ate_median_maximum
+    value_json['ate_median_nolimitation'] = ate_median_nolimitation
+
+    ate_std_minimum = document.getElementById('ate_std_minimum').value.trim();
+    ate_std_maximum = document.getElementById('ate_std_maximum').value.trim();
+    ate_std_nolimitation = document.getElementById('ate_std_nolimitation').checked
+    if(!check_legal(ate_std_minimum, ate_std_maximum, ate_std_nolimitation)) return ;
+    value_json['ate_std_minimum'] = ate_std_minimum
+    value_json['ate_std_maximum'] = ate_std_maximum
+    value_json['ate_std_nolimitation'] = ate_std_nolimitation
+
+    ate_min_minimum = document.getElementById('ate_min_minimum').value.trim();
+    ate_min_maximum = document.getElementById('ate_min_maximum').value.trim();
+    ate_min_nolimitation = document.getElementById('ate_min_nolimitation').checked
+    if(!check_legal(ate_min_minimum, ate_min_maximum, ate_min_nolimitation)) return ;
+    value_json['ate_min_minimum'] = ate_min_minimum
+    value_json['ate_min_maximum'] = ate_min_maximum
+    value_json['ate_min_nolimitation'] = ate_min_nolimitation
+
+    ate_max_minimum = document.getElementById('ate_max_minimum').value.trim();
+    ate_max_maximum = document.getElementById('ate_max_maximum').value.trim();
+    ate_max_nolimitation = document.getElementById('ate_max_nolimitation').checked
+    if(!check_legal(ate_max_minimum, ate_max_maximum, ate_max_nolimitation)) return ;
+    value_json['ate_max_minimum'] = ate_max_minimum
+    value_json['ate_max_maximum'] = ate_max_maximum
+    value_json['ate_max_nolimitation'] = ate_max_nolimitation
+
+    ate_sse_minimum = document.getElementById('ate_sse_minimum').value.trim();
+    ate_sse_maximum = document.getElementById('ate_sse_maximum').value.trim();
+    ate_sse_nolimitation = document.getElementById('ate_sse_nolimitation').checked
+    if(!check_legal(ate_sse_minimum, ate_sse_maximum, ate_sse_nolimitation)) return ;
+    value_json['ate_sse_minimum'] = ate_sse_minimum
+    value_json['ate_sse_maximum'] = ate_sse_maximum
+    value_json['ate_sse_nolimitation'] = ate_sse_nolimitation
+
+    rpe_rmse_minimum = document.getElementById('rpe_rmse_minimum').value.trim();
+    rpe_rmse_maximum = document.getElementById('rpe_rmse_maximum').value.trim();
+    rpe_rmse_nolimitation = document.getElementById('rpe_rmse_nolimitation').checked
+    if(!check_legal(rpe_rmse_minimum, rpe_rmse_maximum, rpe_rmse_nolimitation)) return ;
+    value_json['rpe_rmse_minimum'] = rpe_rmse_minimum
+    value_json['rpe_rmse_maximum'] = rpe_rmse_maximum
+    value_json['rpe_rmse_nolimitation'] = rpe_rmse_nolimitation
+
+    rpe_mean_minimum = document.getElementById('rpe_mean_minimum').value.trim();
+    rpe_mean_maximum = document.getElementById('rpe_mean_maximum').value.trim();
+    rpe_mean_nolimitation = document.getElementById('rpe_mean_nolimitation').checked
+    if(!check_legal(rpe_mean_minimum, rpe_mean_maximum, rpe_mean_nolimitation)) return ;
+    value_json['rpe_mean_minimum'] = rpe_mean_minimum
+    value_json['rpe_mean_maximum'] = rpe_mean_maximum
+    value_json['rpe_mean_nolimitation'] = rpe_mean_nolimitation
+
+    rpe_median_minimum = document.getElementById('rpe_median_minimum').value.trim();
+    rpe_median_maximum = document.getElementById('rpe_median_maximum').value.trim();
+    rpe_median_nolimitation = document.getElementById('rpe_median_nolimitation').checked
+    if(!check_legal(rpe_median_minimum, rpe_median_maximum, rpe_median_nolimitation)) return ;
+    value_json['rpe_median_minimum'] = rpe_median_minimum
+    value_json['rpe_median_maximum'] = rpe_median_maximum
+    value_json['rpe_median_nolimitation'] = rpe_median_nolimitation
+
+    rpe_std_minimum = document.getElementById('rpe_std_minimum').value.trim();
+    rpe_std_maximum = document.getElementById('rpe_std_maximum').value.trim();
+    rpe_std_nolimitation = document.getElementById('rpe_std_nolimitation').checked
+    if(!check_legal(rpe_std_minimum, rpe_std_maximum, rpe_std_nolimitation)) return ;
+    value_json['rpe_std_minimum'] = rpe_std_minimum
+    value_json['rpe_std_maximum'] = rpe_std_maximum
+    value_json['rpe_std_nolimitation'] = rpe_std_nolimitation
+
+    rpe_min_minimum = document.getElementById('rpe_min_minimum').value.trim();
+    rpe_min_maximum = document.getElementById('rpe_min_maximum').value.trim();
+    rpe_min_nolimitation = document.getElementById('rpe_min_nolimitation').checked
+    if(!check_legal(rpe_min_minimum, rpe_min_maximum, rpe_min_nolimitation)) return ;
+    value_json['rpe_min_minimum'] = rpe_min_minimum
+    value_json['rpe_min_maximum'] = rpe_min_maximum
+    value_json['rpe_min_nolimitation'] = rpe_min_nolimitation
+
+    rpe_max_minimum = document.getElementById('rpe_max_minimum').value.trim();
+    rpe_max_maximum = document.getElementById('rpe_max_maximum').value.trim();
+    rpe_max_nolimitation = document.getElementById('rpe_max_nolimitation').checked
+    if(!check_legal(rpe_max_minimum, rpe_max_maximum, rpe_max_nolimitation)) return ;
+    value_json['rpe_max_minimum'] = rpe_max_minimum
+    value_json['rpe_max_maximum'] = rpe_max_maximum
+    value_json['rpe_max_nolimitation'] = rpe_max_nolimitation
+
+    rpe_sse_minimum = document.getElementById('rpe_sse_minimum').value.trim();
+    rpe_sse_maximum = document.getElementById('rpe_sse_maximum').value.trim();
+    rpe_sse_nolimitation = document.getElementById('rpe_sse_nolimitation').checked
+    if(!check_legal(rpe_sse_minimum, rpe_sse_maximum, rpe_sse_nolimitation)) return ;
+    value_json['rpe_sse_minimum'] = rpe_sse_minimum
+    value_json['rpe_sse_maximum'] = rpe_sse_maximum
+    value_json['rpe_sse_nolimitation'] = rpe_sse_nolimitation
+
+    //performance related
+    cpu_max_minimum = document.getElementById('cpu_max_minimum').value.trim();
+    cpu_max_maximum = document.getElementById('cpu_max_maximum').value.trim();
+    cpu_max_nolimitation = document.getElementById('cpu_max_nolimitation').checked
+    if(!check_legal(cpu_max_minimum, cpu_max_maximum, cpu_max_nolimitation)) return ;
+    value_json['cpu_max_minimum'] = cpu_max_minimum
+    value_json['cpu_max_maximum'] = cpu_max_maximum
+    value_json['cpu_max_nolimitation'] = cpu_max_nolimitation
+
+    cpu_mean_minimum = document.getElementById('cpu_mean_minimum').value.trim();
+    cpu_mean_meanimum = document.getElementById('cpu_mean_maximum').value.trim();
+    cpu_mean_nolimitation = document.getElementById('cpu_mean_nolimitation').checked
+    if(!check_legal(cpu_mean_minimum, cpu_mean_meanimum, cpu_mean_nolimitation)) return ;
+    value_json['cpu_mean_minimum'] = cpu_mean_minimum
+    value_json['cpu_mean_maximum'] = cpu_mean_maximum
+    value_json['cpu_mean_nolimitation'] = cpu_mean_nolimitation
+
+    ram_max_minimum = document.getElementById('ram_max_minimum').value.trim();
+    ram_max_maximum = document.getElementById('ram_max_maximum').value.trim();
+    ram_max_nolimitation = document.getElementById('ram_max_nolimitation').checked
+    if(!check_legal(ram_max_minimum, ram_max_maximum, ram_max_nolimitation)) return ;
+    value_json['ram_max_minimum'] = ram_max_minimum
+    value_json['ram_max_maximum'] = ram_max_maximum
+    value_json['ram_max_nolimitation'] = ram_max_nolimitation
+
+    //all data is legal
+
+    
+    var parameter_values = JSON.stringify(value_json);
+    
+
+    $.ajax(
+                {
+                    url: '/eval/search/submit',
+                    type: 'post',
+                    dataType: 'json',
+                    data: parameter_values,
+                    complete: function(data){
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        $('#search_result').html(data.responseText)
+                        //$("#search_result").append(data.responseText);
+                    }
+                }
+            )
+    
+    // var httpRequest = new XMLHttpRequest();//第一步：创建需要的对象
+    // httpRequest.open('POST', "/config/search/submit", true); //第二步：打开连接/***发送json格式文件必须设置请求头 ；如下 - */
+    // httpRequest.setRequestHeader("Content-type","application/json");//设置请求头 注：post方式必须设置请求头（在建立连接后设置请求头）var obj = { name: 'zhansgan', age: 18 };
+    // httpRequest.send(parameter_values);//发送请求 将json写入send中
+    }
+
     $(function(){
         $('#compare_button').click(function(){
             var selected = document.getElementsByClassName("selected");

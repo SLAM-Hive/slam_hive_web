@@ -1,0 +1,152 @@
+
+ID: 93 -- (attention: combination task)
+
+Name: test-321
+Algorithm: orb-slam2-ros-mono
+Dataset: MH_01_easy
+Description: Combination- xxx
+Parameter:
+ID 	Name 	Description 	Value
+5 	ORB2 algorithm parameter 	
+
+Default values:
+nFeatures: 1000
+scaleFactor: 1.2
+nLevels: 8
+iniThFAST: 20
+minThFAST: 7
+
+	
+
+nFeatures: 1000,1250,1500
+scaleFactor: 1.2,1.5
+nLevels: 8
+iniThFAST: 20
+minThFAST: 7
+
+9 	EuRoC MH_01_easy datatset mono parameters 	
+
+These are EuRoC MH_01_easy datatset parameters for ORB2 mono mode
+
+	
+
+fx: 458.654
+fy: 457.296
+cx: 367.215
+cy: 248.375
+k1: -0.28340811
+k2: 0.07395907
+p1: 0.00019359
+p2: 1.76187114e-05
+fps: 20.0
+RGB: 1
+
+10 	ORB2-mono remap 	
+
+This is ORB2-mono algorithm remap
+
+	
+
+mono_topic: /camera/image_raw
+
+12 	EuRoC for ORB2-mono remap 	
+
+This is EuRoC dataset remap for ORB2 mono
+
+	
+
+/camera/image_raw: /cam0/image_raw
+
+
+
+#########################
+create some test data
+
+insert into mappingtaskconfig(name, description, algorithm_id, dataset_id)
+values
+("test", "test", 2, 2);
+insert into mappingtaskconfig(name, description, algorithm_id, dataset_id)
+values
+("test", "test", 2, 1);
+insert into mappingtaskconfig(name, description, algorithm_id, dataset_id)
+values
+("test", "test", 2, 2);
+insert into mappingtaskconfig(name, description, algorithm_id, dataset_id)
+values
+("test", "test", 2, 2);
+
+
+
+insert into parametervalue(name, algoParam_id, value)
+values
+("test1", 5, "test1");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test1", 9, "test1");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test1", 10, "test1");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test1", 12, "test1");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test2", 5, "test2");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test2", 9, "test2");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test2", 10, "test2");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test2", 12, "test3");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test3", 5, "test3");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test3", 9, "test3");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test3", 10, "test3");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test3", 12, "test3");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test4", 5, "test4");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test4", 9, "test4");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test4", 10, "test4");
+insert into parametervalue(name, algoParam_id, value)
+values
+("test4", 13, "test4");
+
+
+
+orb2-slam2-ros-mono + MH_01_easy + 5 9 10 12
+5: ORB2 algorithm parameter (orb-slam2+ros-mono+nFeatures+default)
+ - nFeatures: 1000
+ - scaleFactor: 1.2
+ - nLevels: 8
+ - iniThFAST: 20
+ - minThFAST: 7
+9: EuRoC MH_01_easy datatset mono parameters (EuRoC+MH_01_easy+fx+default)
+ - fx: 458.654
+ - fy: 457.296
+ - cx: 367.215
+ - cy: 248.375
+ - k1: -0.28340811
+ - k2: 0.07395907
+ - p1: 0.00019359
+ - p2: 1.76187114e-05
+ - fps: 20.0
+ - RGB: 1
+10: ORB2-mono remap
+ - mono_topic: /camera/image_raw (orb-slam2+ros-mono+mono_topic+topic remap)
+12: EuRoC for ORB2-mono remap
+ - /camera/image_raw: /cam0/image_raw (EuRoC+MH_01_easy+/camera/image_raw+topic remap)

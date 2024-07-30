@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}MappingTask{% endblock %}
+
+{% block content %}
+    <br>
+    <h4 style="text-align: center;  height:25;">
+        Combination mappingTask {{task_id}} running details
+    </h4>
+    <br>
+    <h5>Totally sub-task number: {{container_number}}</h5>
+    <br>
+    <h5>Ready sub-task number: {{ready_number}}</h5>
+    <br>
+    <h5>Details: </h5>
+    <table class="table table-bordered">
+        <caption>Algorithm parameters</caption>
+        <thead>
+          <tr>
+            <th>Task ID</th>
+            <th >Ready/Not ready</th>
+            <th >Start time</th>
+            <th >Host node name</th>
+            <th >Host node IP</th>
+
+          </tr>
+        </thead>
+        <tbody>
+            {% for i in range(container_number) %}
+
+                {% if pod_flags[i] == False %}
+                    <tr>
+                        <td>{{ pod_infos[i] }}</td>
+                        <td>not ready</td>
+                        <td>/</td>
+                        <td>/</td>
+                        <td>/</td>
+                    </tr>
+
+                {% else %}
+                    <tr>
+                        <td>{{ pod_infos[i].metadata.name }}</td>
+                        <td>ready</td>
+                        <td>{{ pod_infos[i].status.start_time }}</td>
+                        
+                        <td>{{ pod_infos[i].spec.node_name }}</td>
+                        <td>{{ pod_infos[i].status.host_ip }}</td>
+                    </tr>
+
+                {% endif %}
+                <tr>
+          {% endfor %} 
+        </tbody>
+    </table> 
+    <!--"pod name:",pod_info.metadata.name,"ready:",pod_info.status.container_statuses[0].ready,"age:",pod_info.status.start_time,"pod_ip:",pod_info.status.pod_ip,"host_ip:",pod_info.status.host_ip,"node:",pod_info.spec.node_name) -->
+{% endblock %}

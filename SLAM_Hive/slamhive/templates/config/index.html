@@ -3,55 +3,346 @@
 {% block title %}MappingTaskConfig{% endblock %}
 
 {% block content %}
-    <br>    
-    <div style="text-align:center">
-        <a class="button" href="{{ url_for('create_config') }}">
-            <input class="btn btn-primary" type="submit" value="Create Config" >
-        </a>
-    </div>
-    <br>
-        {% for config in configs %}
-            <div class="card mb-3">
-                <small> ID: {{ config.id }} </small>
-                <p> <b>Name:</b> {{ config.name }} <br>
-                <b>Algorithm:</b> {{ config.algorithm.imageTag }} <br>
-                <b>Dataset:</b>  {{ config.dataset.name }}<br>
-                <b>Description:</b> {{ config.description }} <br>
-                <b>Parameter:</b></p>
-                <table class="table table-bordered">
-                    <thead>
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/configuration" class="floating-button"  target="_blank">Wiki Link</a>
+
+
+    <br>  
+    {% if version == 'workstation' or version == 'cluster' or version == 'aliyun' %}
+
+        <div>
+            <h4>Create Configuration</h4>
+        </div>
+        <table class="table table-bordered" sytle="border-collapse: collapse;" >
+            <thead>
+                <tr>
+                    <th>Button</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>    
+                    <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <a class="button" href="{{ url_for('create_config') }}" >
+                                    <input class="btn btn-primary" type="submit" value="Create Config" >
+                                </a>
+                            </div>
+                        </td>
+                        <td >Create a normal mapping configuration.</td>
+                    </tr>  
+
+
+                    <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <a class="button" href="{{ url_for('create_combination_config') }}" >
+                                    <input class="btn btn-primary" type="submit" value="Create Combination Config" style="background-color:rgb(74, 153, 226)" >
+                                </a>
+                            </div>
+                        </td>
+                        <td >Create configurations in batch (1): On the same Dataset, running the same SLAM Algorithm with different configuration parameters.</td>
+                    </tr>  
+
+                    <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <a class="button" href="{{ url_for('index_combination_config') }}" >
+                                    <input class="btn btn-primary" type="submit" value="Show Combination Configs" style="background-color:rgb(74, 153, 226)" >
+                                </a>
+                            </div>
+                        </td>
+                        <td >Create configurations in batch (1): On the same Dataset, running the same SLAM Algorithm with different configuration parameters.</td>
+                    </tr>  
+
+                    <!-- <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <a class="button" href="#" >
+                                    <input class="btn btn-primary" type="submit" value="Create Config" style="background-color:rgb(122, 178, 231)" >
+                                </a>
+                            </div>
+                        </td>
+                        <td >Create configurations in batch (2): TODO: Other ways to create configurations in batch, like (1).</td>
+                    </tr>   -->
+            </tbody>
+        </table>  
+        <div>
+            <h4>Batch Create Task</h4>
+        </div> 
+        <table class="table table-bordered" sytle="border-collapse: collapse;" >
+            <thead>
+                <tr>
+                    <th>Button</th>
+                    <th>Description</th>
+                    <th>ID List</th>
+                </tr>
+            </thead>
+            <tbody>   
+                {% if version == "workstation": %}
+                    <tr>
+                        
+                        <td >
+                            <div style="text-align:left;">  
+                                <button id="button" onclick="createBatchOfMappingTaskWorkstation_list()" class='btn btn-primary'>Create MappingTask (Workstation)</button>
+                            </div>
+                        </td>                    
+                        <td >Create a batch of mappingtasks in Workstation. Input the configurations' id and then they will run one after the other.</td>
+                        <td>
+                            <textarea id="configurations_batch_workstation" rows="2" class="value" cols="100" placeholder="input the id: [id1, id2. ...]"></textarea>
+                        </td>
+                        <!-- <td >Create a batch of mappingtasks. Select the configurations by choosing the checkbox, and then they will run at the same time.</td> -->
+                    </tr>   
+                {%endif%}
+                {% if version == "cluster": %}
+                    <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <button id="button" onclick="createBatchOfMappingTaskCluster_list()" class='btn btn-primary'>Create MappingTask (Cluster)</button>
+                            </div>
+                        </td>
+                        
+                        <td >Create a batch of mappingtasks in Cluster. Input the configurations' id and then they will run at the same time.</td>
+                        <td>
+                            <textarea id="configurations_batch_cluster" rows="2" class="value" cols="100" placeholder="input the id: [id1, id2. ...]"></textarea>
+                        </td>
+                        <!-- <td >Create a batch of mappingtasks. Select the configurations by choosing the checkbox, and then they will run at the same time.</td> -->
+                    </tr> 
+                {%endif%} 
+
+                {% if version == "aliyun": %}
+                    <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <button id="button" onclick="createBatchOfMappingTaskAliyun_list()" class='btn btn-primary'>Create MappingTask (Aliyun)</button>
+                            </div>
+                        </td>
+                        <td >Create a batch of mappingtasks using Aliyun Server. Input the configurations' id and then they will run at the same time.</td>
+                        <td>
+                            <textarea id="configurations_batch_aliyun" rows="2" class="value" cols="100" placeholder="input the id: [id1, id2. ...]"></textarea>
+                        </td>
+                    </tr>  
+                {%endif%} 
+            </tbody>
+        </table>   
+
+
+        {%if version == "aliyun":%}
+            <div>
+                <h4>Aliyun Instance Configuration</h4>
+            </div> 
+            <div>
+                <h5>Disk configuration</h5>
+            </div> 
+            <table class="table table-bordered" sytle="border-collapse: collapse;" >
+                <thead>
+                    <tr>
+                        <th>Size</th>
+                        <th>Category</th>
+                        <th>performance level</th>
+                    </tr>
+                </thead>
+                <tbody>    
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Value </th>
-                        </tr>
-                    </thead>
-                    <tbody>    
-                        {% for paramValue in config.paramValues %}
-                            <tr>
-                                <td class="paramId">{{ paramValue.algoParam.id }}</td>
-                                <td >{{ paramValue.algoParam.name }}</td>
-                                <td><pre>{{paramValue.algoParam.description}}</pre></td>
-                                <td><pre>{{paramValue.value}}</pre></td>
-                            </tr> 
-                        {% endfor %}     
-                    </tbody>
-                </table>               
+                            <td >
+                                <div style="text-align:left;">
+                                    <input id="disk_size" size="30" placeholder="disk size of the instance(GB)"></input>
+                                </div>
+                            </td>
+                            <td >
+                                <div style="text-align:left;">
+                                    <input id="disk_category"  size="30" placeholder="disk category"></input>
+                                </div>
+                            </td>
+                            <td >
+                                <div style="text-align:left;">
+                                    <input id="disk_performance_level" size="30" placeholder="If disk category is cloud_essd"></input>
+                                </div>
+                            </td>
+                        </tr>  
+                </tbody>
+            </table>   
+            <div>
+                <h5>instance configuration</h5>
+            </div> 
+            <table class="table table-bordered" sytle="border-collapse: collapse;" >
+
+                <tbody>    
+                    <tr>
+                        <td>Instance type</td>
+                        <td>Work node image id</td>
+                        <td>Security group id</td>
+                    </tr>
+                        <tr>
+                            <td >
+                                <div style="text-align:left;">
+                                    <input id="instance_type" size="30" placeholder="instance type name"></input>
+                                </div>
+                            </td>
+                            <td >
+                                <div style="text-align:left;">
+                                    <input id="instance_image_id"  size="30" placeholder="work node image id(shared or created by yourself)"></input>
+                                </div>
+                            </td>
+                            <td >
+                                <div style="text-align:left;">
+                                    <input id="instance_security_group_id" size="30" placeholder="instance security group id(shared or created by yourself)"></input>
+                                </div>
+                            </td>
+                        </tr>  
+                </tbody>
+            </table>
+        {%endif%}
+        
+       
+    {% else %}
+
+    <div>
+        <h4>Show Combination Configuration</h4>
+    </div>
+    <table class="table table-bordered" sytle="border-collapse: collapse;" >
+        <thead>
+            <tr>
+                <th>Button</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>    
+
+                <tr>
+                    <td >
+                        <div style="text-align:left;">
+                            <a class="button" href="{{ url_for('index_combination_config') }}" >
+                                <input class="btn btn-primary" type="submit" value="Show Combination Configs" style="background-color:rgb(74, 153, 226)" >
+                            </a>
+                        </div>
+                    </td>
+                    <td >Create configurations in batch (1): On the same Dataset, running the same SLAM Algorithm with different configuration parameters.</td>
+                </tr>  
+
+        </tbody>
+    </table>  
+
+    <div>
+
+    {%endif%}
+    
+    <div>
+        <h4>Search</h4>
+    </div>
+    <div style="border: 2px  solid #020202; padding:10px; width: 85%;">
+        <div style="width: 100%">
+            <table id="algo_table" class="table table-bordered" sytle="border-collapse: collapse;" >
+                <tbody id="algo_table_body">    
+                        <tr>
+                            <td>Algorithm</td>
+                            <td >
+                                <select autofocus name="algo_id" class='form-control' multiple="multiple">
+                                    <option selected="selected" value="All">All</option>
+                                    {% for algo in algos %}
+                                        <option selected="selected" value="{{algo.id}}">{{algo.imageTag}}</option> 
+                                    {% endfor %} 
+                                </select>
+                            </td>
+                        </tr>   
+                        <tr>
+                            <td>Dataset</td>
+                            <td>
+                                <select autofocus name="dataset_id" class='form-control'  multiple="multiple">
+                                    <option selected="selected" value="All">All</option>
+                                    {% for dataset in datasets %}
+                                        <option selected="selected" value="{{dataset.id}}">{{dataset.name}}</option> 
+                                    {% endfor %} 
+                                </select>
+                            </td>
+                        </tr>  
+                        <tr>
+                            <td>Parameters</td>
+                            <td>
+                                <textarea id="parameter_id" rows="5" class="value" cols="100" placeholder="input the key: value..."></textarea>
+                            </td>
+                        </tr>    
+
+                </tbody>
+            </table>  
+            <input class="btn btn-primary" type="submit" value="Search" onclick="search()">
+        </div>
+ 
+    </div>
+        
+
+
+    <br>
+    <div>
+        <h4>Configuration List</h4>
+    </div> 
+    <div id="list">
+        {% for config in configs %}
+            <div class="card mb-3" name="config_card" id={{config.id}} style="display: block;">
+                <small class="configId"> ID:<b>{{ config.id }} </b></small> <br>
+                {% if mappingTasks_number[config.id] == 0 %}
+                    <div style="color:chocolate">Select: <input class="selected" type="checkbox"></div>
+                {% else %}
+                    <div class="selected"></div>
+                {% endif %}
+                <p> <b>Name:</b> {{ config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Algorithm:</b> {{ config.algorithm.imageTag }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Dataset:</b>  {{ config.dataset.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Description:</b> <pre>{{ config.description }} </pre>
                 <div class="btn-group btn-group-justified" role="group" aria-label="...">
                     <div class="btn-group" role="group">
-                        <form method="post" action="{{ url_for('delete_config', id=config.id) }}">
-                            {{ form.csrf_token }} 
-                            {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
-                        </form>
-                        &nbsp;&nbsp;
-                    </div>
-                    <div class="btn-group" role="group">
-                        <a class="button" href="{{ url_for('copy_config', id=config.id) }}">
-                            <input class='btn btn-default btn-sm' type="submit" value="Copy" >
+                        <a class="button" href="{{ url_for('show_config', id=config.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
                         </a>
                         &nbsp;&nbsp;
                     </div>
+                    {% if version == "workstation" or version == "cluster" or version == "aliyun"%}
+                        <div class="btn-group" role="group">
+                            <form method="post" action="{{ url_for('delete_config', id=config.id) }}">
+                                {{ form.csrf_token }} 
+                                {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
+                            </form>
+                            &nbsp;&nbsp;
+                        </div>
+                    {%endif%}
+                    {% if version == "workstation" or version == "cluster" or version == "aliyun"%}
+                        <div class="btn-group" role="group">
+                            <a class="button" href="{{ url_for('copy_config', id=config.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Copy" >
+                            </a>
+                            &nbsp;&nbsp;
+                        </div>
+                    {%endif%}                    
+                    {% if version == "workstation" or version == "cluster" or version == "aliyun"%}
+                        <div class="btn-group" role="group">
+                            <a class="button" href="{{ url_for('copy_combination_config', id=config.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Copy for Combiantion" >
+                            </a>
+                            &nbsp;&nbsp;
+                        </div>
+                    {%endif%}
                     <div class="btn-group" role="group">
                         <a class="button" href="{{ url_for('export_config', id=config.id) }}">
                             <input class='btn btn-default btn-sm' type="submit" value="Export Configuration" 
@@ -59,18 +350,526 @@
                         </a>
                         &nbsp;&nbsp;
                     </div>
-                    <div class="btn-group" role="group">
-                        <a class="button" href="{{ url_for('create_mappingtask', id=config.id) }}">
-                            <input class='btn btn-default btn-sm' type="submit" value="Create MappingTask" 
-                                onclick="return confirm('Are you sure?');">
-                        </a>
-                    </div>
+
+                    {% if version == "cluster" %}
+
+                        {% if mappingTasks_number[config.id] == 0 %}
+                        <div class="btn-group" role="group">
+
+                                <input class='btn btn-default btn-sm' type="submit" value="Create MappingTask (Cluster)" 
+                                    onclick="createMappingTask_single('{{ config.id }}')"
+                                    >
+                                    &nbsp;&nbsp;
+                        </div>
+                        {% else %}
+                        <div class="btn-group" role="group" style="color: rgb(59, 146, 228);">
+                            already create mapping task
+                            &nbsp;&nbsp;
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                        
+                    {% if version == "workstation" %}
+
+                        {% if mappingTasks_number[config.id] == 0 %}
+                        <div class="btn-group" role="group">
+
+                                <input class='btn btn-default btn-sm' type="submit" value="Create MappingTask (Workstation)" 
+                                    onclick="createMappingTask('{{ config.id }}')"
+                                    >
+                                    &nbsp;&nbsp;
+                        </div>
+                        {% else %}
+                        <div class="btn-group" role="group" style="color: rgb(59, 146, 228);">
+                            already create mapping task
+                            &nbsp;&nbsp;
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+
+                    {% if version == "workstation" %}
+                        {% if mappingTasks_number[config.id] != 0 %}
+
+                        <div class="btn-group" role="group">
+
+                            <input class='btn btn-default btn-sm' type="submit" value="Create More MappingTask" 
+                                onclick="createFakeMappingTask('{{ config.id }}')"
+                                >
+                                &nbsp;&nbsp;
+                        </div>
+                        {% else %}
+                        <div class="btn-group" role="group" style="color: rgb(59, 146, 228);">
+                            Please create task first.
+                            &nbsp;&nbsp;
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if version == "cluster" %}
+                        {% if mappingTasks_number[config.id] != 0 %}
+
+                        <div class="btn-group" role="group">
+
+                            <input class='btn btn-default btn-sm' type="submit" value="Create More MappingTask" 
+                                onclick="createFakeMappingTask_single('{{ config.id }}')"
+                                >
+                                &nbsp;&nbsp;
+                        </div>
+                        {% else %}
+                        <div class="btn-group" role="group" style="color: rgb(59, 146, 228);">
+                            Please create task first.
+                            &nbsp;&nbsp;
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+  
                 </div>
+                <br>
             </div>
-            <br>
+            
         {% endfor %}     
+    </div>
+
 {% endblock %}   
 
+{% block scripts %}    
+    <script>
+
+        function search(){
+            algo_list = $('select[name="algo_id"]').val();
+            dataset_list = $('select[name="dataset_id"]').val();
+            parameters = document.getElementById('parameter_id').value;
+            // console.log(algo_list)
+            // console.log(dataset_list)
+            // console.log(parameters)
+            var values_json = {};
+            values_json['algo_list'] = algo_list
+            values_json['dataset_list'] = dataset_list
+            values_json['parameters'] = parameters
+            var parameter_values = JSON.stringify(values_json);
+            
+
+            $.ajax(
+                        {
+                            url: '/config/search/submit',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            complete: function(data){
+                                console.log(data.responseText)
+                                $('#list').html(data.responseText)
+                                // console.log(data.data)
+                                // ret = data.data
+                                // cards = document.getElementsByName("config_card")
+                                // // console.log(cards.length)
+                                // for(i = 0; i < cards.length; i++)
+                                // {
+                                //     console.log(parseInt(cards[i].id), ret.indexOf(parseInt(cards[i].id)))
+                                    
+                                //     if(ret.indexOf(parseInt(cards[i].id)) == -1)
+                                //     {
+                                //         cards[i].style.display = 'none'
+                                //     } else {
+                                //         cards[i].style.display = 'block'
+                                //     }
+                                // }
+                                alert("Search successfully!");
+                                //TODO 没有判断不合法的情况
+                            }
+                        }
+                    )
+            
+            // var httpRequest = new XMLHttpRequest();//第一步：创建需要的对象
+            // httpRequest.open('POST', "/config/search/submit", true); //第二步：打开连接/***发送json格式文件必须设置请求头 ；如下 - */
+            // httpRequest.setRequestHeader("Content-type","application/json");//设置请求头 注：post方式必须设置请求头（在建立连接后设置请求头）var obj = { name: 'zhansgan', age: 18 };
+            // httpRequest.send(parameter_values);//发送请求 将json写入send中
+        }
+        function createMappingTask_single(id){
+            url = '/mappingtask/create/single/' + id.toString()
+            $.ajax(
+                        {
+                            url: url,
+                            type: 'post',
+                            dataType: 'json',
+                            data: id,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+        }
+        function createFakeMappingTask_single(id){
+            url = '/mappingtask/create/single/fake/' + id.toString()
+            $.ajax(
+                        {
+                            url: url,
+                            type: 'post',
+                            dataType: 'json',
+                            data: id,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } 
+                                else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+        }
+        function createMappingTask(id){
+            url = '/mappingtask/create/' + id.toString()
+            $.ajax(
+                        {
+                            url: url,
+                            type: 'post',
+                            dataType: 'json',
+                            data: id,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+        }
+        // 在workstation上创建
+        function createFakeMappingTask(id){
+            url = '/mappingtask/create/fake/' + id.toString()
+            $.ajax(
+                        {
+                            url: url,
+                            type: 'post',
+                            dataType: 'json',
+                            data: id,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+        }
+        // function createBatchOfMappingTask(){
+        //     var selected = document.getElementsByClassName("selected");
+        //     var values_json = {};
+        //     var k = 0;
+        //     // record selected parametr values
+        //     console.log(selected.length)
+        //     for(var i=0; i<selected.length; i++){
+        //         // alert("paramId="+paramID);//seleted_algo=id
+        //         if(selected[i].checked){
+        //             values_json[k] = {};
+        //             console.log(document.getElementsByClassName("configId")[i].innerHTML.split(':')[1])
+        //             values_json[k]['parameterID'] = document.getElementsByClassName("configId")[i].innerHTML.split(':')[1];
+        //             // Verify that the values_json[k]['value'] string satisfies the yaml format
+        //             k=k+1;
+        //         }        
+        //     }
+        //     if(k == 0) {
+        //         // no selected
+        //         alert("Please select at least 1 config!")
+        //     } else {
+        //         // create 
+        //         var parameter_values = JSON.stringify(values_json);
+        //             // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        //             $.ajax(
+        //                 {
+        //                     url: '/mappingtask/create/batch',
+        //                     type: 'post',
+        //                     dataType: 'json',
+        //                     data: parameter_values,
+        //                     success: function(data){
+        //                         if(data.result == 'success') {
+        //                             alert("Create successfully!")
+        //                         } else if (data.result == 'exist') {
+        //                             alert("Already exist!")
+        //                         } else if(data.result == 'version error') {
+        //                             alert("Version error!")
+        //                         }
+        //                     }
+        //                 }
+        //             )
+        //     }
+        // }
+        // function createBatchOfMappingTaskAliyun(){
+        //     var selected = document.getElementsByClassName("selected");
+        //     var values_json = {};
+        //     var k = 0;
+        //     // record selected parametr values
+        //     console.log(selected.length)
+        //     for(var i=0; i<selected.length; i++){
+        //         // alert("paramId="+paramID);//seleted_algo=id
+        //         if(selected[i].checked){
+        //             values_json[k] = {};
+        //             console.log(document.getElementsByClassName("configId")[i].innerHTML.split(':')[1])
+        //             values_json[k]['parameterID'] = document.getElementsByClassName("configId")[i].innerHTML.split(':')[1];
+        //             // Verify that the values_json[k]['value'] string satisfies the yaml format
+        //             k=k+1;
+        //         }        
+        //     }
+        //     if(k == 0) {
+        //         // no selected
+        //         alert("Please select at least 1 config!")
+        //     } else {
+        //         // create 
+
+        //         //Aliyun configuration
+        //         disk_size = document.getElementById("disk_size").value;
+        //         disk_category = document.getElementById("disk_category").value;
+        //         disk_performance_level = document.getElementById("disk_performance_level").value
+
+        //         instance_type = document.getElementById("instance_type").value;
+        //         instance_image_id = document.getElementById("instance_image_id").value;
+        //         instance_security_group_id = document.getElementById("instance_security_group_id").value;
+
+        //         values_json[k] = {}
+        //         values_json[k]['disk_size'] = disk_size
+        //         values_json[k]['disk_category'] = disk_category
+        //         values_json[k]['disk_performance_level'] = disk_performance_level
+        //         values_json[k]['instance_type'] = instance_type
+        //         values_json[k]['instance_image_id'] = instance_image_id
+        //         values_json[k]['instance_security_group_id'] = instance_security_group_id
+
+
+        //         var parameter_values = JSON.stringify(values_json);
+        //             // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        //             $.ajax(
+        //                 {
+        //                     url: '/mappingtask/create/batch_aliyun',
+        //                     type: 'post',
+        //                     dataType: 'json',
+        //                     data: parameter_values,
+        //                     success: function(data){
+        //                         if(data.result == 'success') {
+        //                             alert("Create successfully!")
+        //                         } else if (data.result == 'exist') {
+        //                             alert("Already exist!")
+        //                         } else if(data.result == 'version error') {
+        //                             alert("Version error!")
+        //                         }
+        //                     }
+        //                 }
+        //             )
+        //     }
+        // }
+
+
+        function createBatchOfMappingTaskWorkstation_list(){
+            //从textarea中读取字符串 然后解析
+            
+            configuration_ids = document.getElementById('configurations_batch_workstation').value;
+            //处理字符串
+            // configuration_id_list = configuration_ids.split(",")
+            regex = /^\[\s*(\d+\s*(,\s*\d+\s*)*)?\]$/
+            if(!regex.test(configuration_ids)) {
+                alert("Please input legal str!")
+                return ;
+            }
+
+            configuration_ids_list = configuration_ids.substring(1, configuration_ids.length - 1).split(",")
+            for(var i=0; i < configuration_ids_list.length; i++) {
+                configuration_ids_list[i] = configuration_ids_list[i].trim()
+            }
+            console.log(configuration_ids_list)
+
+
+
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            console.log(configuration_ids_list.length)
+            for(var i=0; i<configuration_ids_list.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                values_json[k] = {};
+                values_json[k]['parameterID'] = configuration_ids_list[i];
+                // Verify that the values_json[k]['value'] string satisfies the yaml format
+                k=k+1;
+
+            }
+            if(k == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                // create 
+                var parameter_values = JSON.stringify(values_json);
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/mappingtask/create/batch/workstation',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+            }
+        }
+
+
+        function createBatchOfMappingTaskCluster_list(){
+            //从textarea中读取字符串 然后解析
+            
+            configuration_ids = document.getElementById('configurations_batch_cluster').value;
+            //处理字符串
+            // configuration_id_list = configuration_ids.split(",")
+            regex = /^\[\s*(\d+\s*(,\s*\d+\s*)*)?\]$/
+            if(!regex.test(configuration_ids)) {
+                alert("Please input legal str!")
+                return ;
+            }
+
+            configuration_ids_list = configuration_ids.substring(1, configuration_ids.length - 1).split(",")
+            for(var i=0; i < configuration_ids_list.length; i++) {
+                configuration_ids_list[i] = configuration_ids_list[i].trim()
+            }
+            console.log(configuration_ids_list)
+
+
+
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            console.log(configuration_ids_list.length)
+            for(var i=0; i<configuration_ids_list.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                values_json[k] = {};
+                values_json[k]['parameterID'] = configuration_ids_list[i];
+                // Verify that the values_json[k]['value'] string satisfies the yaml format
+                k=k+1;
+
+            }
+            if(k == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                // create 
+                var parameter_values = JSON.stringify(values_json);
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/mappingtask/create/batch/cluster',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+            }
+        }
+        function createBatchOfMappingTaskAliyun_list(){
+            configuration_ids = document.getElementById('configurations_batch_aliyun').value;
+            //处理字符串
+            // configuration_id_list = configuration_ids.split(",")
+            regex = /^\[\s*(\d+\s*(,\s*\d+\s*)*)?\]$/
+            if(!regex.test(configuration_ids)) {
+                alert("Please input legal str!")
+                return ;
+            }
+
+            configuration_ids_list = configuration_ids.substring(1, configuration_ids.length - 1).split(",")
+            for(var i=0; i < configuration_ids_list.length; i++) {
+                configuration_ids_list[i] = configuration_ids_list[i].trim()
+            }
+            console.log(configuration_ids_list)
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+
+            for(var i=0; i<configuration_ids_list.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                values_json[k] = {};
+                values_json[k]['parameterID'] = configuration_ids_list[i];
+                // Verify that the values_json[k]['value'] string satisfies the yaml format
+                k=k+1; 
+            }
+            if(k == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                // create 
+
+                //Aliyun configuration
+                disk_size = document.getElementById("disk_size").value;
+                disk_category = document.getElementById("disk_category").value;
+                disk_performance_level = document.getElementById("disk_performance_level").value
+
+                instance_type = document.getElementById("instance_type").value;
+                instance_image_id = document.getElementById("instance_image_id").value;
+                instance_security_group_id = document.getElementById("instance_security_group_id").value;
+
+                values_json[k] = {}
+                values_json[k]['disk_size'] = disk_size
+                values_json[k]['disk_category'] = disk_category
+                values_json[k]['disk_performance_level'] = disk_performance_level
+                values_json[k]['instance_type'] = instance_type
+                values_json[k]['instance_image_id'] = instance_image_id
+                values_json[k]['instance_security_group_id'] = instance_security_group_id
+
+
+                var parameter_values = JSON.stringify(values_json);
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/mappingtask/create/batch/aliyun',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Create successfully!")
+                                    location.href = "/mappingtask/index";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+            }
+        }
+    </script>
+{% endblock %}
 
 
 

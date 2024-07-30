@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2022 Yuanyuan Yang, Bowen Xu, Yinjie Li, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +35,23 @@ RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U && \
 RUN pip install -r requirements.txt
 RUN pip install cryptography
 RUN apt install -y curl
-RUN curl -sSL https://get.daocloud.io/docker | sh
+
+
+ENV TZ=Asia/Shanghai
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
+
+RUN apt-get update &&  apt -y install texlive-xetex
+
+#RUN curl -sSL https://get.daocloud.io/docker | sh
+RUN curl -sSL https://get.docker.com/ | sh
+
+
 
 COPY . .
+
+#### add
+RUN ln  -s  /slam_hive_results/mapping_results/ /home/slam_hive_web/SLAM_Hive/slamhive/static/
+
+
 CMD ["flask", "run"]

@@ -2,7 +2,77 @@
 <title>{% block title %}Home{% endblock %}</title>
 
 {% block content %}
-<br><h5 style="text-align: center">Support algorithms List</h5>
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 110px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/" class="floating-button">Wiki Link</a>
+
+
+
+<h1 style="text-align:center">Welcome to the SLAM Hive Benchmarking Suite</h1>
+
+<h3 style="text-align:center"><a href="/wiki/" target="_blank">Wiki Help</a> &#183; <a href="/wiki/ShanghaiTech_Datasets" target="_blank">The ShanghaiTech Mapping Robot Datasets</a> &#183; <a href="https://github.com/SLAM-Hive" target="_blank">Code</a> &#183; <a href="https://robotics.shanghaitech.edu.cn/" target="_blank">Mobile Autonomous Robotic Systems Lab</a> @ <a href="https://www.shanghaitech.edu.cn/eng/" target="_blank">ShanghaiTech University</a></h3>
+
+
+<p>SLAM Hive is a docker based sofware package for the purose of evaluating the performance of SLAM (<a href="https://en.wikipedia.org/wiki/Simultaneous_localization_and_mapping" target="_blank">Simultaneous Localization and Mapping</a>) algorithms by running them in docker containers with robotic datasets. The resulting paths are then compared with the ground truth paths of the datasets. The SLAM Hive software is available on GitHub: <a href="https://github.com/SLAM-Hive">https://github.com/SLAM-Hive</a>. Here on <a href="https://slam-hive.net">https://slam-hive.net</a> a version of the suite configured as "view only" is running, showing the results of several hundreds of <a href="/mappingtask/index">mapping runs</a> and enabling users to <a href="/analysis/index">analyze</a> the results in detail.</p>
+
+<p>
+SLAM Hive is developed and maintained by the <a href="https://robotics.shanghaitech.edu.cn/" target="_blank">Mobile Autonomous Robotic Systems Lab</a> of <a href="https://www.shanghaitech.edu.cn/eng/" target="_blank">ShanghaiTech University</a>. To get help or contribute please use the GitHub of the <a href="https://github.com/SLAM-Hive/slam_hive_web" target="_blank">slam_hive_web</a> repository. 
+</p>
+
+<p>
+More details about SLAM Hive can be found in our papers (please cite):<br/>
+<p>
+2024 Journal preprint (<a href="https://arxiv.org/pdf/2406.17586" target="_blank">arXiv PDF</a>):
+<pre>
+@article{liu2024benchmarking,
+  title={Benchmarking SLAM Algorithms in the Cloud: The SLAM Hive System},
+  author={Liu, Xinzhe and Yang, Yuanyuan and Xu, Bowen and Schwertfeger, S{\"o}ren},
+  journal={arXiv preprint arXiv:2406.17586},
+  year={2024}
+}
+</pre>
+</p>
+
+ICRA 2023 paper (<a href="https://arxiv.org/pdf/2303.11854" target="_blank">arXiv PDF</a>):
+<pre>
+@inproceedings{yang2023slam,
+  title={The SLAM Hive Benchmarking Suite},
+  author={Yang, Yuanyuan and Xu, Bowen and Li, Yinjie and Schwertfeger, S{\"o}ren},
+  booktitle={2023 IEEE International Conference on Robotics and Automation (ICRA)},
+  pages={11257--11263},
+  year={2023},
+  organization={IEEE}
+}
+</pre>
+</p>
+
+<p>
+Below please find the list of supported SLAM algorithms and datasets:
+</p>
+
+
+<br><h5 style="text-align: center">Supported Algorithms List</h5>
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -13,7 +83,7 @@
     </thead>
     <tbody>
         <tr>
-             <td>EVO</td>
+             <td rowspan="2" style="vertical-align: middle;">EVO</td>
             <td>slam-hive-evaluation:evo</td>
             <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/evaluation/evo>
                 https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/evaluation/evo</a>    
@@ -21,6 +91,14 @@
             <td>SLAM_Hive/slam_hive_algos/evo</a>    
             </td>
         </tr>   
+        <tr>
+           <td>slam-hive-evaluation:evo_latex</td>
+           <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/evaluation/evo>
+               https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/evaluation/evo</a>    
+           </td> -->
+           <td>SLAM_Hive/slam_hive_algos/evo_latex</a>    
+           </td>
+       </tr>   
         <tr>
             <td rowspan="3" style="vertical-align: middle;">ORB-SLAM2</td>
             <td>slam-hive-algorithm:orb-slam2-ros-mono</td>
@@ -117,15 +195,73 @@
             </td> -->
             <td>SLAM_Hive/slam_hive_algos/lio-sam</a> 
         </tr>
+        <tr>
+            <td>LOAM</td>
+            <td>slam-hive-algorithm:loam</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/loam</a> 
+        </tr>
+        <tr>
+            <td>A-LOAM</td>
+            <td>slam-hive-algorithm:a-loam</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/a-loam</a> 
+        </tr>
+        <tr>
+            <td  rowspan="2" style="vertical-align: middle;">LEGO-LOAM</td>
+            <td>slam-hive-algorithm:lego-loam</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/lego-loam</a> 
+        </tr>
+
+        <tr>
+            <td>slam-hive-algorithm:lego-loam-imu</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/lego-loam-imu</a> 
+        </tr>
+        <tr>
+            <td>NDT-LOAM</td>
+            <td>slam-hive-algorithm:ndt-loam</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/ndt-loam</a> 
+        </tr>
+
+        <tr>
+            <td>DSO TODO</td>
+            <td>slam-hive-algorithm:dso</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/dso</a> 
+        </tr>
+
+        <tr>
+            <td>LIVOX-LOAM TODO</td>
+            <td>slam-hive-algorithm:livox-loam</td>
+            <!-- <td><a href=https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithms/lio-sam>
+                https://star-center.shanghaitech.edu.cn/gitlab/slam-hive/slam-algorithm/lio-sam</a>
+            </td> -->
+            <td>SLAM_Hive/slam_hive_algos/livox-loam</a> 
+        </tr>
     </tbody>
 </table>
 
-<br><br><h5 style="text-align: center">Support datasets List</h5><br>
+<br><br><h5 style="text-align: center">Supported Datasets List</h5><br>
 <li>For every dataset sequence, we provide a script for replaying and remapping. </li>
-<li>For EuRoC datasets, we provide groundtruth.txt in tum format, all need to do is download the sequence. </li>
-<li>For TUM RGB-D datasets, just download the sequennce and groundtruth, and rename groundtruth file to groundtruth.txt.</li>
-<li>For KITTI datasets, we provide the groundtruth, all need to do is download the raw data and use <a href=https://github.com/tomas789/kitti2bag>kitti2bag</a> to transform it to bag.</li>
-<li>For EuRoC and TUM RGB-D datastes, we provide download script: SLAM_Hive/slam_hive_datasets/download_all.py. </li>
+<li>For EuRoC datasets, we provide groundtruth.txt in tum format, all you need to do is download the sequence. </li>
+<li>For TUM RGB-D datasets, just download the sequennce and groundtruth, and rename the groundtruth file to groundtruth.txt.</li>
+<li>For KITTI datasets, we provide the groundtruth, all you need to do is download the raw data and use <a href=https://github.com/tomas789/kitti2bag>kitti2bag</a> to transform it to ROS 1 bags.</li>
+<li>For EuRoC and TUM RGB-D datastes, we provide a download script: SLAM_Hive/slam_hive_datasets/download_all.py. </li>
 <br>
 <table class="table table-bordered">
     <thead>
@@ -313,4 +449,5 @@
         </tr>
     </tbody>
 </table>
+
 {% endblock %}

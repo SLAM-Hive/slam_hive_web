@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/configuration" class="floating-button"  target="_blank">Wiki Link</a>
+
+    <!-- <br>
+    
+    <div style="text-align:left;">
+        <a class="button" href="{{ url_for('index_combination_config') }}" >
+            <input class="btn btn-primary" type="submit" value="Return" >
+        </a>
+    </div> -->
+    <br>
+    <div class="card mb-3">
+        <small class="configId"> ID:{{ comb_config.id }}</small> <br>
+        <p> <b>Name:</b> {{ comb_config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+        <b>Description:</b> <pre>{{ comb_config.description }} </pre> <br>
+    </div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Show Details</th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for config in configs %}
+                <tr>
+                    <td class="config_id">{{ config.id }}</td>
+                    <td>{{ config.name}}</td>
+                    {% if mappingTasks_number[config.id] != 0 %}
+                        <td style="color:#445ef7">already create mapping task</td>
+                    {% else %}
+                        <td style="color:#eb2214">need to create mapping task</td>
+                    {% endif %}
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a class="button" href="{{ url_for('show_config', id=config.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
+                            </a>
+                            &nbsp;&nbsp;
+                        </div>             
+                    </td>
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+    var socket = io('/');
+    socket.on('update_eval_state', function(res) {
+        console.log(res.data);
+        alert(res.data);
+        location.reload();
+        });
+    });
+</script>
+
+{% endblock %}
+

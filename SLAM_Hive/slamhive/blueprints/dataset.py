@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2022 Yuanyuan Yang, Bowen Xu, Yinjie Li, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with SLAM Hive.  If not, see <https://www.gnu.org/licenses/>.
 
-from flask import flash, redirect, url_for, render_template, request, jsonify
+from flask import flash, redirect, url_for, render_template, request, jsonify, abort
 from slamhive import app, db
 from slamhive.models import Dataset
 from slamhive.forms import NewDatasetForm, DeleteDatasetForm
 
 @app.route('/dataset/create', methods=['GET', 'POST'])
 def create_dataset():
+    version = app.config['CURRENT_VERSION']
+    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+        return abort(403)
+
     form = NewDatasetForm()
     if form.validate_on_submit():
         name = form.name.data
         url = form.url.data
         description = form.description.data
-        dataset = Dataset(name=name, url=url, description=description)
+        className = form.className.data
+        dataset = Dataset(name=name, url=url, description=description, className=className)
         db.session.add(dataset)
         db.session.commit()        
         flash('Your creation is saved!')
@@ -40,11 +45,15 @@ def index_dataset():
     datasets = Dataset.query.order_by(Dataset.id.desc()).all()
     db.session.commit()
     flash('Index')
-    return render_template('/dataset/index.html', datasets=datasets, form=form)
+    return render_template('/dataset/index.html', datasets=datasets, form=form, version=app.config['CURRENT_VERSION'])
 
 
 @app.route('/dataset/<int:id>/delete', methods=['POST'])
 def delete_dataset(id):
+    version = app.config['CURRENT_VERSION']
+    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+        return abort(403)
+        
     form = DeleteDatasetForm()
     if form.validate_on_submit():
         dataset = Dataset.query.get(id)

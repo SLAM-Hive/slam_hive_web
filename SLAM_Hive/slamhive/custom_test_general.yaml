@@ -1,0 +1,334 @@
+# 6 test
+group_name: all_v_slam
+
+group_description: t666
+
+evaluation_form:
+  algorithm_dataset_type: 1 # 0: same_algorithm_same_dataset.            can choose: 1 2 4 5 8
+                          # 1: different_algorithm_same dataset        can choose: 1 2 4 6 8
+                          # 2: same_algorithm_different_dataset        can choose: 9
+                          # 3: different_algorithm_different_dataset.  can choose: 3 7
+  1_trajectory_comparison:
+    choose: 0
+  2_accuracy_metrics_comparison:
+    choose: 0
+  3_accuracy_metrics_comparison: #该参数不考虑下面的选择，只考虑条件筛选
+    choose: 0
+    calculate_method: 1 # 0: average (one algo + one dataset: may include different configs)
+                      # 1: best   
+                      # then for each (algo, dataset), get one configuration, then calculate the average value
+    metric: ate_rmse # eg: ATE-RMSE
+    algorithm_id: [2, 5] 
+    dataset_id: [2,13]
+  4_usage_metrics_comparison:
+    choose: 0  
+  5_scatter_diagram:
+    choose: 0
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram:
+    choose: 1
+    x-axis: general+image_frequency
+    y-axis: ate_mean
+  7_comparison_table:
+    choose: 0
+    metrics: 
+    calculate_method: 
+    
+  
+configuration_choose: # implicit limitation：chosen configs has running task and evaluation
+  # two ways to choose confg
+  configuration_id: [274, 275, 276, 277, 278, 279, 282, 285, 287, 288] # provide id
+  comb_configuration_id: 
+  limitation_rules:   # by a rule; 还没有测试，如果这个规则没有的话，会是怎么样的，应该就会返回一个空集
+    algorithm_id: 
+    dataset_id: 
+    parameters_value: ["nFeatures < 4000"]
+    evaluation_value:
+      ate_rmse_nolimitation: 1              # 0 or 1
+      ate_rmse_minimum:                   # if just minimum and no maximum, can just fill the minimum
+      ate_rmse_maximum:
+      ate_mean_nolimitation:    1           # 0 or 1
+      ate_mean_minimum:                  
+      ate_mean_maximum:
+      ate_median_nolimitation:   1           # 0 or 1
+      ate_median_minimum:                  
+      ate_median_maximum:
+      ate_std_nolimitation:   1           # 0 or 1
+      ate_std_minimum:                  
+      ate_std_maximum:
+      ate_min_nolimitation:    1          # 0 or 1
+      ate_min_minimum:                  
+      ate_min_maximum:
+      ate_max_nolimitation:  1            # 0 or 1
+      ate_max_minimum:                  
+      ate_max_maximum:
+      ate_sse_nolimitation:    1          # 0 or 1
+      ate_sse_minimum:                  
+      ate_sse_maximum:
+      rpe_rmse_nolimitation:     1         # 0 or 1
+      rpe_rmse_minimum:                   # if just minimum and no maximum, can just fill the minimum
+      rpe_rmse_maximum:
+      rpe_mean_nolimitation:    1          # 0 or 1
+      rpe_mean_minimum:                  
+      rpe_mean_maximum:
+      rpe_median_nolimitation:    1          # 0 or 1
+      rpe_median_minimum:                  
+      rpe_median_maximum:
+      rpe_std_nolimitation:    1          # 0 or 1
+      rpe_std_minimum:                  
+      rpe_std_maximum:
+      rpe_min_nolimitation:    1          # 0 or 1
+      rpe_min_minimum:                  
+      rpe_min_maximum:
+      rpe_max_nolimitation:   1           # 0 or 1
+      rpe_max_minimum:                  
+      rpe_max_maximum:
+      rpe_sse_nolimitation:     1         # 0 or 1
+      rpe_sse_minimum:                  
+      rpe_sse_maximum:
+      cpu_max_nolimitation:    1          # 0 or 1
+      cpu_max_minimum:                  
+      cpu_max_maximum:
+      cpu_mean_nolimitation:    1          # 0 or 1
+      cpu_mean_minimum:                  
+      cpu_mean_maximum:
+      ram_max_nolimitation:     1         # 0 or 1
+      ram_max_minimum:                  
+      ram_max_maximum:
+  combination_rule:                     # how to combine two ways：Union set; intersection set; complement set; (1U2) - (3); U: Union; I: in
+    first_one: [0]
+    first_rule: ["U"]
+    second_one: [1,2]
+    second_rule: ["U"]
+
+
+################################################################################################################################3
+
+# test the unsuccess traj的情况
+
+# 1 test
+group_name: bug_test_1
+
+group_description: t666
+
+evaluation_form:
+  algorithm_dataset_type: 1 # 0: same_algorithm_same_dataset.            can choose: 1 2 4 5 8  3
+                          # 1: different_algorithm_same dataset        can choose: 1 2 4 6 8    3
+                          # 2: same_algorithm_different_dataset        can choose: 9
+                          # 3: different_algorithm_different_dataset.  can choose: 3 7
+  1_trajectory_comparison:
+    choose: 1
+  2_accuracy_metrics_comparison:
+    choose: 1
+  3_accuracy_metrics_comparison: #该参数不考虑下面的选择，只考虑条件筛选
+    choose: 1
+    calculate_method: 1 # 0: average (one algo + one dataset: may include different configs)
+                      # 1: best   
+                      # then for each (algo, dataset), get one configuration, then calculate the average value
+    metric: ate_rmse # eg: ATE-RMSE
+    algorithm_id: [12] 
+    dataset_id: [2]
+  4_usage_metrics_comparison:
+    choose: 1  
+  5_scatter_diagram:
+    choose: 1
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram:
+    choose: 0
+    x-axis: general+image_frequency
+    y-axis: ate_mean
+  7_comparison_table:
+    choose: 0
+    metrics: 
+    calculate_method: 
+    
+  
+configuration_choose: # implicit limitation：chosen configs has running task and evaluation
+  # two ways to choose confg
+  configuration_id: [ 279, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359] # provide id
+  comb_configuration_id: 
+  limitation_rules:   # by a rule; 还没有测试，如果这个规则没有的话，会是怎么样的，应该就会返回一个空集
+    algorithm_id: 
+    dataset_id: 
+    parameters_value: ["nFeatures < 4000"]
+    evaluation_value:
+      ate_rmse_nolimitation: 1              # 0 or 1
+      ate_rmse_minimum:                   # if just minimum and no maximum, can just fill the minimum
+      ate_rmse_maximum:
+      ate_mean_nolimitation:    1           # 0 or 1
+      ate_mean_minimum:                  
+      ate_mean_maximum:
+      ate_median_nolimitation:   1           # 0 or 1
+      ate_median_minimum:                  
+      ate_median_maximum:
+      ate_std_nolimitation:   1           # 0 or 1
+      ate_std_minimum:                  
+      ate_std_maximum:
+      ate_min_nolimitation:    1          # 0 or 1
+      ate_min_minimum:                  
+      ate_min_maximum:
+      ate_max_nolimitation:  1            # 0 or 1
+      ate_max_minimum:                  
+      ate_max_maximum:
+      ate_sse_nolimitation:    1          # 0 or 1
+      ate_sse_minimum:                  
+      ate_sse_maximum:
+      rpe_rmse_nolimitation:     1         # 0 or 1
+      rpe_rmse_minimum:                   # if just minimum and no maximum, can just fill the minimum
+      rpe_rmse_maximum:
+      rpe_mean_nolimitation:    1          # 0 or 1
+      rpe_mean_minimum:                  
+      rpe_mean_maximum:
+      rpe_median_nolimitation:    1          # 0 or 1
+      rpe_median_minimum:                  
+      rpe_median_maximum:
+      rpe_std_nolimitation:    1          # 0 or 1
+      rpe_std_minimum:                  
+      rpe_std_maximum:
+      rpe_min_nolimitation:    1          # 0 or 1
+      rpe_min_minimum:                  
+      rpe_min_maximum:
+      rpe_max_nolimitation:   1           # 0 or 1
+      rpe_max_minimum:                  
+      rpe_max_maximum:
+      rpe_sse_nolimitation:     1         # 0 or 1
+      rpe_sse_minimum:                  
+      rpe_sse_maximum:
+      cpu_max_nolimitation:    1          # 0 or 1
+      cpu_max_minimum:                  
+      cpu_max_maximum:
+      cpu_mean_nolimitation:    1          # 0 or 1
+      cpu_mean_minimum:                  
+      cpu_mean_maximum:
+      ram_max_nolimitation:     1         # 0 or 1
+      ram_max_minimum:                  
+      ram_max_maximum:
+  combination_rule:                     # how to combine two ways：Union set; intersection set; complement set; (1U2) - (3); U: Union; I: in
+    first_one: [0]
+    first_rule: ["U"]
+    second_one: [1,2]
+    second_rule: ["U"]
+
+
+
+#######################################################
+
+整一个最新的
+
+        evaluation_type.append([1, 2, 4, 6, 7, 3, 8]) #下面那几行代码感觉有点问题，我先改改
+        # type_1.append([1, 2, 4, 6, 8])
+        # type_2.append([9])
+        # type_3.append([3, 7])
+        evaluation_type.append([1, 2, 4, 6, 7, 3])
+        evaluation_type.append([6, 7])
+        evaluation_type.append([3,6, 7])
+
+
+configuration_choose:
+  comb_configuration_id:
+  - 72
+  combination_rule:
+    first_one:
+    - 1
+    first_rule:
+    - U
+    second_one:
+    - 0
+    - 2
+    second_rule:
+    - I
+  configuration_id: []
+  limitation_rules:
+    algorithm_id: null
+    dataset_id: null
+    evaluation_value:
+      ate_max_maximum: null
+      ate_max_minimum: null
+      ate_max_nolimitation: 1
+      ate_mean_maximum: null
+      ate_mean_minimum: null
+      ate_mean_nolimitation: 1
+      ate_median_maximum: null
+      ate_median_minimum: null
+      ate_median_nolimitation: 1
+      ate_min_maximum: null
+      ate_min_minimum: null
+      ate_min_nolimitation: 1
+      ate_rmse_maximum: null
+      ate_rmse_minimum: null
+      ate_rmse_nolimitation: 1
+      ate_sse_maximum: null
+      ate_sse_minimum: null
+      ate_sse_nolimitation: 1
+      ate_std_maximum: null
+      ate_std_minimum: null
+      ate_std_nolimitation: 1
+      cpu_max_maximum: null
+      cpu_max_minimum: null
+      cpu_max_nolimitation: 1
+      cpu_mean_maximum: null
+      cpu_mean_minimum: null
+      cpu_mean_nolimitation: 1
+      ram_max_maximum: null
+      ram_max_minimum: null
+      ram_max_nolimitation: 1
+      rpe_max_maximum: null
+      rpe_max_minimum: null
+      rpe_max_nolimitation: 1
+      rpe_mean_maximum: null
+      rpe_mean_minimum: null
+      rpe_mean_nolimitation: 1
+      rpe_median_maximum: null
+      rpe_median_minimum: null
+      rpe_median_nolimitation: 1
+      rpe_min_maximum: null
+      rpe_min_minimum: null
+      rpe_min_nolimitation: 1
+      rpe_rmse_maximum: null
+      rpe_rmse_minimum: null
+      rpe_rmse_nolimitation: 1
+      rpe_sse_maximum: null
+      rpe_sse_minimum: null
+      rpe_sse_nolimitation: 1
+      rpe_std_maximum: null
+      rpe_std_minimum: null
+      rpe_std_nolimitation: 1
+    parameters_value:
+    - nFeatures < 4000
+evaluation_form:
+  1_trajectory_comparison:
+    choose: 0
+  2_accuracy_metrics_comparison:
+    choose: 0
+  3_accuracy_metrics_comparison:
+    algorithm_id:
+    - 12
+    calculate_method: 1
+    choose: 0
+    dataset_id:
+    - 2
+    metric: ate_rmse
+  4_usage_metrics_comparison:
+    choose: 0
+  5_scatter_diagram:
+    choose: 0
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram:
+    choose: 1
+    x-axis: general+image_frequency
+    y-axis: ate_mean
+  7_3d_scatter_diagram:
+    choose: 1
+    x-axis: general+image_width
+    y-axis: general+imu_frequency
+    z-axis: ate_mean
+  8_repeatability_test:
+    choose: 0
+    metric: null
+  algorithm_dataset_type: 0
+group_description: orb-slam3-stereo-inertial on MH_01_easy;  108 configurations; 3
+  nFeatures; 3 image frequency; 3 imu frequency; 3 image resolution
+group_name: 528_test_6_7sssssss

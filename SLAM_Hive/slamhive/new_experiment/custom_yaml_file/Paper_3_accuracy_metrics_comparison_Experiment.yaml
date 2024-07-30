@@ -1,0 +1,178 @@
+Explanation:
+
+This analysis task is to calculate the metric of some configurations
+
+10 modes
+5 dataset sequences
+totally: 50
+
+This YAML file's metric is "ATE RMSE", you can also change to select other metrics.
+
+874
+854 (数据差太大，使用了nFeatures = 2000)
+
+configuration_choose:
+  comb_configuration_id: []
+  combination_rule:
+    first_one:
+    - 0
+    first_rule:
+    - I
+    second_one:
+    - 2
+    - 1
+    second_rule:
+    - U
+  configuration_id:
+  - 274
+  - 275
+  - 276
+  - 277
+  - 278
+  - 279
+  - 282
+  - 285
+  - 287
+  - 288
+  - 706
+  - 1735
+  - 1585
+  - 722
+  - 754
+  - 762
+  - 1885
+  - 2040
+  - 2190
+  - 2340
+  - 1765
+  - 1615
+  - 778
+  - 794
+  - 826
+  - 834
+  - 1915
+  - 2070
+  - 2220
+  - 2370
+  - 1795
+  - 1645
+  - 850
+  - 866
+  - 882
+  - 890
+  - 1945
+  - 2100
+  - 2250
+  - 2400
+  - 1825
+  - 1675
+  - 906
+  - 978
+  - 954
+  - 962
+  - 1975
+  - 2130
+  - 2280
+  - 2430
+  limitation_rules:
+    algorithm_id: null
+    dataset_id: null
+    evaluation_value:
+      ate_max_maximun: null
+      ate_max_minimum: null
+      ate_max_nolimitation: 1
+      ate_mean_maximun: null
+      ate_mean_minimum: null
+      ate_mean_nolimitation: 1
+      ate_median_maximun: null
+      ate_median_minimum: null
+      ate_median_nolimitation: 1
+      ate_min_maximun: null
+      ate_min_minimum: null
+      ate_min_nolimitation: 1
+      ate_rmse_maximun: null
+      ate_rmse_minimum: null
+      ate_rmse_nolimitation: 1
+      ate_sse_maximun: null
+      ate_sse_minimum: null
+      ate_sse_nolimitation: 1
+      ate_std_maximun: null
+      ate_std_minimum: null
+      ate_std_nolimitation: 1
+      cpu_max_maximun: null
+      cpu_max_minimum: null
+      cpu_max_nolimitation: 1
+      cpu_mean_maximun: null
+      cpu_mean_minimum: null
+      cpu_mean_nolimitation: 1
+      ram_max_maximun: null
+      ram_max_minimum: null
+      ram_max_nolimitation: 1
+      rpe_max_maximun: null
+      rpe_max_minimum: null
+      rpe_max_nolimitation: 1
+      rpe_mean_maximun: null
+      rpe_mean_minimum: null
+      rpe_mean_nolimitation: 1
+      rpe_median_maximun: null
+      rpe_median_minimum: null
+      rpe_median_nolimitation: 1
+      rpe_min_maximun: null
+      rpe_min_minimum: null
+      rpe_min_nolimitation: 1
+      rpe_rmse_maximun: null
+      rpe_rmse_minimum: null
+      rpe_rmse_nolimitation: 1
+      rpe_sse_maximun: null
+      rpe_sse_minimum: null
+      rpe_sse_nolimitation: 1
+      rpe_std_maximun: null
+      rpe_std_minimum: null
+      rpe_std_nolimitation: 1
+    parameters_value: []
+evaluation_form:
+  1_trajectory_comparison:
+    choose: 0
+  2_accuracy_metrics_comparison:
+    choose: 0
+  3_accuracy_metrics_comparison:
+    algorithm_id:
+    - 2
+    - 3
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    calculate_method: 1
+    choose: 1
+    dataset_id:
+    - 2
+    - 3
+    - 5
+    - 6
+    - 7
+    metric: ate_rmse # change here to change metric
+  4_usage_metrics_comparison:
+    choose: 0
+  5_scatter_diagram:
+    choose: 0
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram:
+    choose: 0
+    x-axis: null
+    y-axis: null
+  7_3d_scatter_diagram:
+    choose: 0
+    x-axis: general+image_width
+    y-axis: general+imu_frequency
+  8_repeatability_test:
+    choose: 0
+    metric: ate_mean
+  algorithm_dataset_type: 3
+group_description: test3
+group_name: Paper_3_accuracy_metrics_comparison_ATE_RMSE_Experiment

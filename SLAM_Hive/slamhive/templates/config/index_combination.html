@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+{% block title %}MappingTaskConfig{% endblock %}
+
+{% block content %}
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/configuration" class="floating-button"  target="_blank">Wiki Link</a>
+    <br>  
+
+    <br>
+        {% for comb_config in comb_configs %}
+            <div class="card mb-3">
+                <small class="configId"> ID:{{ comb_config.id }}</small> <br>
+                <p> <b>Name:</b> {{ comb_config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Description:</b> <pre>{{ comb_config.description }} </pre> <br>
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('show_combination_config', id = comb_config.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Show Each Configs" >
+                        </a>
+                        &nbsp;&nbsp;
+                    </div>
+                </div>
+            </div>
+        {% endfor %}     
+{% endblock %}   
+
+{% block scripts %}    
+    <script>
+        function createBatchOfMappingTask(){
+            var selected = document.getElementsByClassName("selected");
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            console.log(selected.length)
+            for(var i=0; i<selected.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                if(selected[i].checked){
+                    values_json[k] = {};
+                    console.log(document.getElementsByClassName("configId")[i].innerHTML.split(':')[1])
+                    values_json[k]['parameterID'] = document.getElementsByClassName("configId")[i].innerHTML.split(':')[1];
+                    // Verify that the values_json[k]['value'] string satisfies the yaml format
+                    k=k+1;
+                }        
+            }
+            if(k == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                // create 
+                var parameter_values = JSON.stringify(values_json);
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/mappingtask/create/batch',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                alert("Save successfully!");
+                                // btnfun();
+                            },
+                            exist: function(data){
+                                alert("already exist!");
+                            }
+                        }
+                    )
+            }
+        }
+    </script>
+{% endblock %}
+
+
+
+      
+      
+      
+     
+
+
+
+
+    
+
+  
+
+
+

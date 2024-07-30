@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2022 Yuanyuan Yang, Bowen Xu, Yinjie Li, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with SLAM Hive.  If not, see <https://www.gnu.org/licenses/>.
 
-from flask import flash, redirect, url_for, render_template, request, jsonify
+from flask import flash, redirect, url_for, render_template, request, jsonify, abort
 from slamhive import app, db
 from slamhive.models import Algorithm, AlgoParameter
 from slamhive.forms import NewAlgoForm, DeleteAlgoForm, NewAlgoParameterForm, DeleteAlgoParameterForm
@@ -22,12 +22,20 @@ from slamhive.forms import NewAlgoForm, DeleteAlgoForm, NewAlgoParameterForm, De
 
 @app.route('/algo/create', methods=['GET', 'POST'])
 def create_algo():
+
+    version = app.config['CURRENT_VERSION']
+    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+        return abort(403)
+
     form = NewAlgoForm()
     if form.validate_on_submit():
+        # add filter
         imageTag = form.imageTag.data
         dockerUrl = form.dockerUrl.data
         description = form.description.data
-        algo = Algorithm(imageTag=imageTag, dockerUrl=dockerUrl,description=description)
+        className = form.className.data
+        attribute = form.attribute.data
+        algo = Algorithm(imageTag=imageTag, dockerUrl=dockerUrl,description=description, className=className, attribute = attribute)
         db.session.add(algo)
         db.session.commit()        
         flash('Your creation is saved!')
@@ -41,11 +49,15 @@ def index_algo():
     algos = Algorithm.query.order_by(Algorithm.id.desc()).all()
     db.session.commit()
     flash('Index')
-    return render_template('/algo/index.html', algos=algos, form=form)
+    return render_template('/algo/index.html', algos=algos, form=form, version=app.config['CURRENT_VERSION'])
 
 
 @app.route('/algo/<int:id>/delete', methods=['POST'])
 def delete_algo(id):
+    version = app.config['CURRENT_VERSION']
+    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+        return abort(403)
+
     form = DeleteAlgoForm()
     if form.validate_on_submit():
         algo = Algorithm.query.get(id)

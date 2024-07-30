@@ -1,0 +1,1023 @@
+{% extends 'base.html' %}
+{% block title %}Custom Analysis{% endblock %}
+
+{% block content %}
+    <br>
+    <style>
+        .floating-button {
+            position: fixed;
+            top: 120px;
+            right: 30px;
+            background-color: #5195e2;
+            color: rgb(255, 255, 255);
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        .floating-button:hover {
+            background-color: #0055af;
+        }
+    </style>
+    <a href="https://slam-hive.net/wiki/customanalysis" class="floating-button"  target="_blank">Wiki Link</a>
+
+    <!-- {% if status == "failed" %}
+    <div>
+        Some error occurred. Please submit your task again.
+    </div>
+    {% elif status == "running" %}
+    <div>
+        Your task is still running. Please wait for a few times.
+    </div>
+    {%else%} -->
+
+
+    <div>
+        <div><h5>Current Custom Analysis id: <b style="color: #000;" id="custom_id">{{analysis_id}}</b></h5></div>
+        <h5>Configurations number: {{config_number}}</h5>
+        <h5>Configurations ID List: [ 
+            {% for id1 in config_id_list %}
+            {{ id1 }},
+            {% endfor %}     
+            ]
+        </h5> 
+
+        <div style="text-align:left;">
+            <a class="button" href="{{ url_for('download_custom_analysis', id = analysis_id) }}" download="resource.zip" >
+                <input class="btn btn-primary" type="submit" value="Download custom ayalysis resources" style="background-color:rgb(74, 153, 226)" >
+            </a>
+        </div>
+        <br>
+
+    </div>
+
+
+    <div>
+        {% for i in range(number) %}
+
+
+            {% if title_name[i] == "1_trajectory_comparison" and img_number[i] != 0 %}
+            <!--下载所有的轨迹文件 和 真值文件 (ate rpe 2; cpu ram 4; 都有表格文件 也不麻烦)-->
+            <a class="button" href="{{ url_for('download_analysis_1_resource', id = analysis_id) }}" download="dynamic.zip" >
+                <input class="btn btn-primary" type="submit" value="Download Trajectory Files" style="background-color:rgb(10, 116, 214)" >
+            </a>
+            {%endif%}
+
+            {% if title_name[i] == "2_accuracy_metrics_comparison" and img_number[i] != 0 %}
+            <!--下载所有的轨迹文件 和 真值文件 (ate rpe 2; cpu ram 4; 都有表格文件 也不麻烦)-->
+            <a class="button" href="{{ url_for('download_analysis_2_resource', id = analysis_id) }}" download="dynamic.zip" >
+                <input class="btn btn-primary" type="submit" value="Download ATE & RPE Data" style="background-color:rgb(10, 116, 214)" >
+            </a>
+            {%endif%}
+            {% if title_name[i] == "4_usage_metrics_comparison" and img_number[i] != 0 %}
+            <!--下载所有的轨迹文件 和 真值文件 (ate rpe 2; cpu ram 4; 都有表格文件 也不麻烦)-->
+            <a class="button" href="{{ url_for('download_analysis_4_resource', id = analysis_id) }}" download="dynamic.zip" >
+                <input class="btn btn-primary" type="submit" value="Download Resource Usage Data" style="background-color:rgb(10, 116, 214)" >
+            </a>
+            {%endif%}
+
+            {% if title_name[i] == "8_repeatability_test" and img_number[i] != 0  %}
+            <!--下载所有的轨迹文件 和 真值文件 (ate rpe 2; cpu ram 4; 都有表格文件 也不麻烦)-->
+            <a class="button" href="{{ url_for('download_analysis_8_resource', id = analysis_id) }}" download="dynamic.zip" >
+                <input class="btn btn-primary" type="submit" value="Download 8_repeatability_test Data" style="background-color:rgb(10, 116, 214)" >
+            </a>
+            {%endif%}
+
+            {% if img_number[i] != 0 %}
+                <br>
+                <div>
+                    <h4>{{ title_name[i] }}</h4>
+                </div>
+                <div class="row">
+                    {% for img in img_list_list[i] %}
+                    {% if title_name[i] == "6_scatter_diagram" %}
+                    <div class="col-md-6" style="width: 180%; height: 180%;">
+                        <img src="{{ url_for('get_img', imgpath=img) }}" width="180%" height="180%"/>
+                    </div>
+                    <div class="col-md-6"></div>
+                    {% elif title_name[i] == "7_3d_scatter_diagram" %}
+                    <div class="col-md-6" style="width: 120%; height: 100%;">
+                        <img src="{{ url_for('get_img', imgpath=img) }}" width="150%" height="100%"/>
+                    </div>
+                    <div class="col-md-6"></div>
+
+
+
+                    {% else %}
+                    <div class="col-md-6">
+                        <img src="{{ url_for('get_img', imgpath=img) }}" width="90%" height="90%"/>
+                    </div>                   
+                    {% endif %}
+
+                    {% endfor %}
+
+                    <br>
+      
+                </div>
+                {% if title_name[i] == "6_scatter_diagram" %}
+                <br>
+                <br>
+                <br>
+                    <div>
+                        <h5>Generated scatter diagram</h5>
+                    <!--提交图标生成请求-->
+                        <table class="table table-bordered">
+                            <tr>
+                                <td>
+                                    x axis: 
+                                </td>
+                    
+                                <td>
+                                    <select id="axis_x_1">
+                                        <option value="CPU-mean">CPU-mean</option>
+                                        <option value="CPU-max">CPU-max</option>
+                                        <option value="Memory-max">Memory-max</option>
+
+                                        <option value="ATE-rmse">ATE-rmse</option>
+                                        <option value="ATE-mean">ATE-mean</option>
+                                        <option value="ATE-median">ATE-median</option>
+                                        <option value="ATE-std">ATE-std</option>
+                                        <option value="ATE-min">ATE-min</option>
+                                        <option value="ATE-max">ATE-max</option>
+                                        <option value="ATE-sse">ATE-sse</option>
+                                       
+                                        <option value="RPE-rmse">RPE-rmse</option>
+                                        <option value="RPE-mean">RPE-mean</option>
+                                        <option value="RPE-median">RPE-median</option>
+                                        <option value="RPE-std">RPE-std</option>
+                                        <option value="RPE-min">RPE-min</option>
+                                        <option value="RPE-max">RPE-max</option>
+                                        <option value="RPE-sse">RPE-sse</option>
+
+
+
+                                        {% for p in parameters_list: %}
+
+                                        <option value="{{p}}">{{p}}</option>
+
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    y axis: 
+                                </td>
+                                <td>
+                                    <select id="axis_y_1">
+                                        <option value="ATE-rmse">ATE-rmse</option>
+                                        <option value="ATE-mean">ATE-mean</option>
+                                        <option value="ATE-median">ATE-median</option>
+                                        <option value="ATE-std">ATE-std</option>
+                                        <option value="ATE-min">ATE-min</option>
+                                        <option value="ATE-max">ATE-max</option>
+                                        <option value="ATE-sse">ATE-sse</option>
+                                       
+                                        <option value="RPE-rmse">RPE-rmse</option>
+                                        <option value="RPE-mean">RPE-mean</option>
+                                        <option value="RPE-median">RPE-median</option>
+                                        <option value="RPE-std">RPE-std</option>
+                                        <option value="RPE-min">RPE-min</option>
+                                        <option value="RPE-max">RPE-max</option>
+                                        <option value="RPE-sse">RPE-sse</option>
+                                        
+                                        <option value="CPU-mean">CPU-mean</option>
+                                        <option value="CPU-max">CPU-max</option>
+                                        <option value="Memory-max">Memory-max</option>
+
+
+
+
+                                        {% for p in parameters_list: %}
+
+                                        <option value="{{p}}">{{p}}</option>
+
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+                        <button id="button" onclick="showDiagram1Online()" class='btn btn-primary'>Show Dynamic Diagram</button>
+                        <button id="button" onclick="showDiagram1Online_extend()" class='btn btn-primary'>Show Dynamic Diagram (Extend)</button>
+                        <button id="button" onclick="createDiagram1()" class='btn btn-primary'>Create dynamic Diagram</button>
+                        <a class="button" href="{{ url_for('download_diagram1', id = analysis_id) }}" download="dynamic.zip" >
+                            <input class="btn btn-primary" type="submit" value="Download current Diagram" style="background-color:rgb(10, 116, 214)" >
+                        </a>
+                        
+
+
+                        <div id = "search_result"></div>
+                        
+                        </div>
+                        
+                        <div id = "search_result_extend" style="padding = 100px"></div>
+                        
+                        </div>
+                        <br>
+                        <br>
+                    </div>
+
+                    <div>
+                        <h5>Generated traejctory successful rate diagram</h5>
+                    <!--提交图标生成请求-->
+                        <table class="table table-bordered">
+                            <tr>
+                                <td>
+                                    x axis: 
+                                </td>
+                    
+                                <td>
+                                    <select id="axis_x_t">
+                                        {% for p in parameters_list: %}
+
+                                        <option value="{{p}}">{{p}}</option>
+
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+                        <button id="button" onclick="showDiagramtOnline()" class='btn btn-primary'>Show Trajectory Susuccess Rate</button>
+                        
+                        <br>
+                        <div id = "search_result_t"></div>
+                        
+                        </div>
+                        <br>
+                        <br>
+                    </div>
+                    {% endif %}
+
+                    {% if title_name[i] == "7_3d_scatter_diagram" %}
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                    <div>
+                        <h5 id = "3d_check">Generated scatter diagram</h5>
+                    <!--提交图标生成请求-->
+                        <table class="table table-bordered">
+                            <tr>
+                                <td>
+                                    x axis: 
+                                </td>
+                    
+                                <td>
+                                    <select id="axis_x_2">
+                                        <option value="ATE-rmse">ATE-rmse</option>
+                                        <option value="ATE-mean">ATE-mean</option>
+                                        <option value="ATE-median">ATE-median</option>
+                                        <option value="ATE-std">ATE-std</option>
+                                        <option value="ATE-min">ATE-min</option>
+                                        <option value="ATE-max">ATE-max</option>
+                                        <option value="ATE-sse">ATE-sse</option>
+                                       
+                                        <option value="RPE-rmse">RPE-rmse</option>
+                                        <option value="RPE-mean">RPE-mean</option>
+                                        <option value="RPE-median">RPE-median</option>
+                                        <option value="RPE-std">RPE-std</option>
+                                        <option value="RPE-min">RPE-min</option>
+                                        <option value="RPE-max">RPE-max</option>
+                                        <option value="RPE-sse">RPE-sse</option>
+
+                                        <option value="CPU-mean">CPU-mean</option>
+                                        <option value="CPU-max">CPU-max</option>
+                                        <option value="Memory-max">Memory-max</option>
+
+                                        {% for p in parameters_list: %}
+
+                                        <option value="{{p}}">{{p}}</option>
+
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    y axis: 
+                                </td>
+                                <td>
+                                    <select id="axis_y_2">
+
+                                        <option value="CPU-mean">CPU-mean</option>
+                                        <option value="CPU-max">CPU-max</option>
+                                        <option value="Memory-max">Memory-max</option>
+
+
+                                        <option value="ATE-rmse">ATE-rmse</option>
+                                        <option value="ATE-mean">ATE-mean</option>
+                                        <option value="ATE-median">ATE-median</option>
+                                        <option value="ATE-std">ATE-std</option>
+                                        <option value="ATE-min">ATE-min</option>
+                                        <option value="ATE-max">ATE-max</option>
+                                        <option value="ATE-sse">ATE-sse</option>
+                                       
+                                        <option value="RPE-rmse">RPE-rmse</option>
+                                        <option value="RPE-mean">RPE-mean</option>
+                                        <option value="RPE-median">RPE-median</option>
+                                        <option value="RPE-std">RPE-std</option>
+                                        <option value="RPE-min">RPE-min</option>
+                                        <option value="RPE-max">RPE-max</option>
+                                        <option value="RPE-sse">RPE-sse</option>
+                                        
+
+
+                                        {% for p in parameters_list: %}
+
+                                        <option value="{{p}}">{{p}}</option>
+
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    z axis: 
+                                </td>
+                                <td>
+                                    <select id="axis_z_2">
+
+                                        {% for p in parameters_list: %}
+
+                                        <option value="{{p}}">{{p}}</option>
+
+                                        {% endfor %}
+
+                                        <option value="ATE-rmse">ATE-rmse</option>
+                                        <option value="ATE-mean">ATE-mean</option>
+                                        <option value="ATE-median">ATE-median</option>
+                                        <option value="ATE-std">ATE-std</option>
+                                        <option value="ATE-min">ATE-min</option>
+                                        <option value="ATE-max">ATE-max</option>
+                                        <option value="ATE-sse">ATE-sse</option>
+                                       
+                                        <option value="RPE-rmse">RPE-rmse</option>
+                                        <option value="RPE-mean">RPE-mean</option>
+                                        <option value="RPE-median">RPE-median</option>
+                                        <option value="RPE-std">RPE-std</option>
+                                        <option value="RPE-min">RPE-min</option>
+                                        <option value="RPE-max">RPE-max</option>
+                                        <option value="RPE-sse">RPE-sse</option>
+                                        
+                                        <option value="CPU-mean">CPU-mean</option>
+                                        <option value="CPU-max">CPU-max</option>
+                                        <option value="Memory-max">Memory-max</option>
+
+
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+                        <button id="button" onclick="showDiagram2Online()" class='btn btn-primary'>Show Dynamic Diagram</button>
+                        <button id="button" onclick="showDiagram2Online_extend()" class='btn btn-primary'>Show Dynamic Diagram (Extend)</button>
+                        <button id="button" onclick="createDiagram2()" class='btn btn-primary'>Create Dynamic Diagram and Save Raw Data</button>
+                        <a class="button" href="{{ url_for('download_diagram2', id = analysis_id) }}" download="dynamic.zip" >
+                            <input class="btn btn-primary" type="submit" value="Download All Diagrams and Raw Data" style="background-color:rgb(10, 116, 214)" >
+                        </a>
+                        <br>
+                        <small>If now table shows, please click the button again or refresh the page.</small>
+                        
+
+
+                        <div id = "search_result_2"></div>
+                        
+                        </div>
+                        <div id = "search_result_2_extend"></div>
+                        
+                        </div>
+                        <br>
+                        <br>
+                    </div>
+
+                    {% endif %}
+                    {% if title_name[i] == "8_repeatability_test" %}
+                        <!--二维表格，类似于evaluation的结果-->
+                        <div>
+                            <table class="table table-bordered">
+                                <caption>ATE Error Statistics</caption>
+                                <thead>
+                                  <tr>
+                                    <th>Task id\ATE</th>
+                                    <th>RMSE</th>
+                                    <th >Mean</th>
+                                    <th>Median</th>
+                                    <th >Std</th>
+                                    <th>Min</th>
+                                    <th >Max</th>
+                                    <th >SSE</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+
+                                    {% for evaluation in evaluation_list:%}
+                                    <tr>
+                                        <td>{{ evaluation.evaluation.mappingTask.id }} </td>
+                                        <td>{{ evaluation.ate_rmse }}</td>
+                                        <td>{{ evaluation.ate_mean }}</td>
+                                        <td>{{ evaluation.ate_median }}</td>
+                                        <td>{{ evaluation.ate_std }}</td>
+                                        <td>{{ evaluation.ate_min }}</td>
+                                        <td>{{ evaluation.ate_max }}</td>
+                                        <td>{{ evaluation.ate_sse }}</td>      
+                                    </tr>
+                                   
+                                    {%endfor%}
+                                </tbody>
+                            </table>
+                            <table class="table table-bordered">
+                                <caption>RPE Error Statistics</caption>
+                                <thead>
+                                  <tr>
+                                    <th>Task id\RPE</th>
+                                    <th>RMSE</th>
+                                    <th >Mean</th>
+                                    <th>Median</th>
+                                    <th >Std</th>
+                                    <th>Min</th>
+                                    <th >Max</th>
+                                    <th >SSE</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+
+                                    {% for evaluation in evaluation_list:%}
+                                    <tr>
+                                        <td>{{ evaluation.evaluation.mappingTask.id }} </td>
+                                        <td>{{ evaluation.rpe_rmse }}</td>
+                                        <td>{{ evaluation.rpe_mean }}</td>
+                                        <td>{{ evaluation.rpe_median }}</td>
+                                        <td>{{ evaluation.rpe_std }}</td>
+                                        <td>{{ evaluation.rpe_min }}</td>
+                                        <td>{{ evaluation.rpe_max }}</td>
+                                        <td>{{ evaluation.rpe_sse }}</td>    
+                                    </tr>
+                                     
+                                    {%endfor%}
+                                </tbody>
+                            </table>
+                        
+                            <table class="table table-bordered">
+                                <caption>Computing resource usage</caption>
+                                <thead>
+                                  <tr>
+                                    <th>Task id\Usage</th>
+                                    <th>Max CPU (core)</th>
+                                    <th >Mean CPU (core)</th>
+                                    <th >Max Memory (MB)</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+
+
+                                    {% for performance in performance_list:%}
+                                    <tr>
+                                        <td>{{ performance.mappingTask.id }}</td>
+                                        <td>{{ performance.max_cpu }} </td>
+                                        <td>{{ performance.mean_cpu }} </td>
+                                        <td>{{ performance.max_ram }} </td>    
+                                    </tr>
+                      
+                                    {%endfor%}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+
+                
+            {% endif %}
+        {% endfor %}
+
+
+    </div>
+    <!-- {%endif%} -->
+<br>
+<br>
+    <div>
+        <div><h5>rules: </h5></div>
+        <pre style="background-color:#EAEAEF; color:green; font-size:13px; line-height:20px; ">
+{{ yaml_content }}
+        </pre>
+    </div>
+
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/echarts.min.js"></script>
+<script src="/static/js/echarts-gl.min.js"></script>
+<!-- <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
+<script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts-gl.min.js"></script> -->
+<script>
+    $(document).ready(function() {
+    var socket = io('/');
+    socket.on('update_eval_state', function(res) {
+        console.log(res.data);
+        alert(res.data);
+        location.reload();
+        });
+    });
+
+    function createDiagram1()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_1 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_1 option:selected")
+        values_json['y-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig1',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                success: function(data){
+                    if(data.result == 'success') {
+                        alert("Save successfully!")
+                    } else if (data.result == 'exist') {
+                        alert("Already exist!")
+                    } else if(data.result == 'version error') {
+                        alert("Version error!")
+                    }
+                }
+            }
+        )
+    }
+    function showDiagram1Online()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_1 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_1 option:selected")
+        values_json['y-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig1/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                beforeSend: function() {
+                // Show the waiting dialog
+                $('body').append('<div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; padding: 20px; background-color: #fff; border: 8px solid #000; text-align: center;">Waiting</div>');
+            },
+                complete: function(data){
+                    $('#loading').remove();
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result");
+                        console.log("ss")
+                        while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        {
+                            div.removeChild(div.firstChild);
+                        }
+                        
+// 获取extend
+
+
+                        $("#search_result").append(data.responseText);
+                        console.log("ss")
+
+                        
+                        
+                        sleep(1000)
+
+                        // 要判断一下有没有3d的
+                        ccc = document.getElementById("3d_check");
+                        console.log(ccc)
+                        if(ccc != NULL) 
+                            console.log("cc")
+                            showDiagram2Online_content_without_waiting();
+                            var div1 = document.getElementById("search_result_2");
+                            while(div1.hasChildNodes()) //当div下还存在子节点时 循环继续
+                            {
+                                div1.removeChild(div1.firstChild);
+                            
+                            }
+                            div1.style.height = '0px'
+
+                    }
+            }
+        )
+    }
+
+
+    function showDiagram1Online_extend()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_1 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_1 option:selected")
+        values_json['y-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        //首先判断选择的有没有ate rpe相关的
+        
+        if(values_json['x-axis'].indexOf('ATE') == -1 && values_json['x-axis'].indexOf('RPE') == -1 && values_json['y-axis'].indexOf('ATE') == -1 && values_json['y-axis'].indexOf('RPE') == -1) {
+            alert("Plsease select Evo metric")
+        }
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig1_extend/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                beforeSend: function() {
+                // Show the waiting dialog
+                $('body').append('<div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; padding: 20px; background-color: #fff; border: 8px solid #000; text-align: center;">Waiting</div>');
+            },
+                complete: function(data){
+                    $('#loading').remove();
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result_extend");
+                        console.log("ss")
+                        while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        {
+                            div.removeChild(div.firstChild);
+                        }
+                        
+                        // 获取extend
+
+                        // $("#search_result_extend").append("<br><br><br>")
+                        $("#search_result_extend").append(data.responseText);
+                        console.log("ss")
+
+                    //     sleep(1000)
+
+                    //     // 要判断一下有没有3d的
+                    //     ccc = document.getElementById("3d_check");
+                    //     console.log(ccc)
+                    //     if(ccc != NULL) {
+                    //         console.log("cc")
+                    //         showDiagram2Online_content_without_waiting();
+                    //         var div1 = document.getElementById("search_result_2");
+                    //         while(div1.hasChildNodes()) //当div下还存在子节点时 循环继续
+                    //         {
+                    //             div1.removeChild(div1.firstChild);
+                            
+                    //         }
+                    //         div1.style.height = '0px'
+
+                    // }
+                }
+            }    
+        )
+    }    
+
+    function showDiagramtOnline()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_t option:selected")
+        values_json['x-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/digt/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                beforeSend: function() {
+                // Show the waiting dialog
+                $('body').append('<div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; padding: 20px; background-color: #fff; border: 8px solid #000; text-align: center;">Waiting</div>');
+            },
+                complete: function(data){
+                    $('#loading').remove();
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result_t");
+                        while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        {
+                            div.removeChild(div.firstChild);
+                        }
+                        $("#search_result_t").append(data.responseText);
+                    }
+            }
+        )
+    }
+
+    function createDiagram2()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_2 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_2 option:selected")
+        values_json['y-axis'] = options.val()
+        options=$("#axis_z_2 option:selected")
+        values_json['z-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig2',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                success: function(data){
+                    if(data.result == 'success') {
+                        alert("Save successfully!")
+                    } else if (data.result == 'exist') {
+                        alert("Already exist!")
+                    } else if(data.result == 'version error') {
+                        alert("Version error!")
+                    }
+                }
+            }
+        )
+    }
+
+
+    function showDiagram2Online()
+    {
+        showDiagram2Online_content();
+    }
+    function showDiagram2Online_content()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_2 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_2 option:selected")
+        values_json['y-axis'] = options.val()
+        options=$("#axis_z_2 option:selected")
+        values_json['z-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig2/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                beforeSend: function() {
+                // Show the waiting dialog
+                $('body').append('<div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; padding: 20px; background-color: #fff; border: 8px solid #000; text-align: center;">Waiting</div>');
+            },
+                complete: function(data){
+                    $('#loading').remove();
+                    
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result_2");
+                        div.style.height = '750px'
+                        console.log("ss")
+
+                        for(ii = 0; ii < 10; i++)
+                        {
+                            while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                            {
+                                div.removeChild(div.firstChild);
+                            }
+                            $("#search_result_2").append(data.responseText);
+                        }
+
+
+                        sleep(1)
+
+                        for(ii = 0; ii < 100; i++)
+                        {
+                            while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                            {
+                                div.removeChild(div.firstChild);
+                            }
+                            $("#search_result_2").append(data.responseText);
+                        }
+
+                        
+                        console.log("-----------------------------------------------------")
+                    }
+            }
+        )
+    }
+
+
+    function showDiagram2Online_extend()
+    {
+        showDiagram2Online_content_extend();
+    }
+    function showDiagram2Online_content_extend()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_2 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_2 option:selected")
+        values_json['y-axis'] = options.val()
+        options=$("#axis_z_2 option:selected")
+        values_json['z-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        if(values_json['x-axis'].indexOf('ATE') == -1 && values_json['x-axis'].indexOf('RPE') == -1 && values_json['y-axis'].indexOf('ATE') == -1 && values_json['y-axis'].indexOf('RPE') == -1 && values_json['z-axis'].indexOf('ATE') == -1 && values_json['z-axis'].indexOf('RPE') == -1) {
+            alert("Plsease select Evo metric")
+        }
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig2_extend/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                beforeSend: function() {
+                // Show the waiting dialog
+                $('body').append('<div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; padding: 20px; background-color: #fff; border: 8px solid #000; text-align: center;">Waiting</div>');
+                },
+                complete: function(data){
+                    $('#loading').remove();
+                    
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result_2_extend");
+                        div.style.height = '750px'
+                        console.log("ss")
+
+                        for(ii = 0; ii < 10; i++)
+                        {
+                            while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                            {
+                                div.removeChild(div.firstChild);
+                            }
+                            $("#search_result_2_extend").append(data.responseText);
+                        }
+
+
+                        sleep(1)
+
+                        for(ii = 0; ii < 100; i++)
+                        {
+                            while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                            {
+                                div.removeChild(div.firstChild);
+                            }
+                            $("#search_result_2_extend").append(data.responseText);
+                        }
+
+                        
+                        console.log("-----------------------------------------------------")
+                }
+            }
+        )
+    }
+
+
+    function showDiagram2Online_content_without_waiting()
+    {
+        var values_json = {};
+        var k = 0;
+        var options=$("#axis_x_2 option:selected")
+        values_json['x-axis'] = options.val()
+        options=$("#axis_y_2 option:selected")
+        values_json['y-axis'] = options.val()
+        options=$("#axis_z_2 option:selected")
+        values_json['z-axis'] = options.val()
+        values_json['custom_id'] = document.getElementById('custom_id').innerHTML
+        // record selected parametr values
+        console.log(values_json)
+
+        var parameter_values = JSON.stringify(values_json);
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+        $.ajax(
+            {
+                url: '/analysis/diagram/dig2/show',
+                type: 'post',
+                dataType: 'json',
+                data: parameter_values,
+                complete: function(data){
+                        // console.log(data.responseText)
+                        // console.log(data.data)
+                        // var newPage = window.open("about:blank", "_blank");
+                        // //将后台传过来的html页面写到新打开的浏览器窗口中显示
+                        // obj.document.write(data.data);
+                        // alert("Save successfully!");
+                        console.log(data.responseText)
+                        var div = document.getElementById("search_result_2");
+                        console.log("ss")
+
+
+                        // var div1 = document.getElementById("search_result");
+                        // console.log("ss")
+                        // while(div1.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        // {
+                        //     div1.removeChild(div1.firstChild);
+                        // }
+
+
+for(ii = 0; ii < 10; i++)
+{
+    while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        {
+                            div.removeChild(div.firstChild);
+                        }
+                        $("#search_result_2").append(data.responseText);
+}
+
+
+sleep(1)
+
+for(ii = 0; ii < 100; i++)
+{
+    while(div.hasChildNodes()) //当div下还存在子节点时 循环继续
+                        {
+                            div.removeChild(div.firstChild);
+                        }
+                        $("#search_result_2").append(data.responseText);
+}
+
+                        
+                        console.log("-----------------------------------------------------")
+                    }
+            }
+        )
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function sleep(time) {
+  const beginTime = new Date().getTime()
+  const endTime = beginTime + time
+  while(true) {
+    if (new Date().getTime() > endTime) {
+      return
+    }
+  }
+}
+
+</script>
+
+{% endblock %}

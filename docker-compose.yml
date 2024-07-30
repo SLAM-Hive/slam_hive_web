@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2022 Yuanyuan Yang, Bowen Xu, Yinjie Li, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,29 +20,40 @@ services:
   flask:
     container_name: slam_hive_web
     build: .
+    # image: slam-hive-web:2024_4_12
     ports:
       - "5000:5000"
-      # - "80:80"
     links:
       - mysql
     privileged: true
     depends_on:
       - mysql
     volumes:
-      - ../slam_hive_algos:/slam_hive_algos
-      - ../slam_hive_datasets:/slam_hive_datasets
-      - ../slam_hive_results:/slam_hive_results
-      - ../slam_hive_configurations:/slam_hive_configurations
+      - /SLAM-Hive/slam_hive_algos:/slam_hive_algos
+      - /SLAM-Hive/slam_hive_datasets:/slam_hive_datasets
+      - /SLAM-Hive/slam_hive_results:/slam_hive_results
+      - /SLAM-Hive/slam_hive_configurations:/slam_hive_configurations
       - /var/run/docker.sock:/var/run/docker.sock
+      - /SLAM-Hive/slam_hive_web:/home/slam_hive_web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=80"
+      - "traefik.http.routers.flask.rule=Host(`slam-hive.net`)"
+      # - "traefik.http.services.flask.loadbalancer.server.port=5000"
+      - "traefik.http.routers.flask.entrypoints=websecure"
+      - "traefik.http.routers.flask.tls.certresolver=myresolver"
+      - "traefik.docker.network=web"
     restart: always
     networks:
-      extnetwork:
+      - web
+      - inter
   mysql:
     container_name: flask_mysql
     image: mysql:8.0.31
     environment:
       - MYSQL_ROOT_PASSWORD=SLAMHive1#
-      - MYSQL_DATABASE=slamhiveDB
+      - MYSQL_DATABASE=slamhiveDB3
+      - MYSQL_HOST= localhost # mysql_ip
       # - MYSQL_HOST=172.30.0.3
     privileged: true
     ports:
@@ -52,8 +63,11 @@ services:
       - ./db/sql:/docker-entrypoint-initdb.d
     restart: always
     networks:
-      extnetwork:
-        ipv4_address: 172.40.0.3
+      # - web
+      - inter
+      # extnetwork:
+      #   ipv4_address: 172.40.0.3
+    hostname: mysql_ip
   cadvisor:
     image: google/cadvisor
     container_name: cadvisor
@@ -64,15 +78,16 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     privileged: true
-    devices:
-      - "/dev/kmsg:/dev/kmsg"
+    # devices:
+    #   - "/dev/kmsg:/dev/kmsg"
     ports:
       - 8085:8080
     restart: always
-    networks:
-      extnetwork:
+    # networks:
+    #   extnetwork:
 networks:
-  extnetwork:
-    ipam:
-      config:
-        - subnet: 172.40.0.0/16
+  web:
+    external: true
+  inter:
+    driver: bridge
+     

@@ -1,0 +1,162 @@
+orb-slam3-stereo-inertial:
+  - 118
+  - 119
+  - 120
+  - 121
+  - 122
+vins-fusion-stereo-imu:
+  - 174
+  - 175
+  - 176
+  - 177
+  - 178
+
+configuration_choose:
+  comb_configuration_id:
+  - 118
+  - 119
+  - 120
+  - 121
+  - 122
+  - 174
+  - 175
+  - 176
+  - 177
+  - 178  
+  combination_rule:
+    first_one:
+    - 1
+    - 2
+    first_rule:
+    - I
+    second_one:
+    - 0
+    second_rule:
+    - I
+  configuration_id: []
+  limitation_rules:
+    algorithm_id:
+    - 2
+    - 3
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    dataset_id:
+    - 2
+    - 3
+    - 5
+    - 6
+    - 7
+    evaluation_value:
+      ate_max_maximum: null
+      ate_max_minimum: null
+      ate_max_nolimitation: 1
+      ate_mean_maximum: null
+      ate_mean_minimum: null
+      ate_mean_nolimitation: 1
+      ate_median_maximum: null
+      ate_median_minimum: null
+      ate_median_nolimitation: 1
+      ate_min_maximum: null
+      ate_min_minimum: null
+      ate_min_nolimitation: 1
+      ate_rmse_maximum: 0.1
+      ate_rmse_minimum: 0.02
+      ate_rmse_nolimitation: 0
+      ate_sse_maximum: null
+      ate_sse_minimum: null
+      ate_sse_nolimitation: 1
+      ate_std_maximum: null
+      ate_std_minimum: null
+      ate_std_nolimitation: 1
+      cpu_max_maximum: null
+      cpu_max_minimum: null
+      cpu_max_nolimitation: 1
+      cpu_mean_maximum: 2
+      cpu_mean_minimum: 0.6
+      cpu_mean_nolimitation: 0
+      ram_max_maximum: 1000
+      ram_max_minimum: 600
+      ram_max_nolimitation: 0
+      rpe_max_maximum: null
+      rpe_max_minimum: null
+      rpe_max_nolimitation: 1
+      rpe_mean_maximum: null
+      rpe_mean_minimum: null
+      rpe_mean_nolimitation: 1
+      rpe_median_maximum: null
+      rpe_median_minimum: null
+      rpe_median_nolimitation: 1
+      rpe_min_maximum: null
+      rpe_min_minimum: null
+      rpe_min_nolimitation: 1
+      rpe_rmse_maximum: null
+      rpe_rmse_minimum: null
+      rpe_rmse_nolimitation: 1
+      rpe_sse_maximum: null
+      rpe_sse_minimum: null
+      rpe_sse_nolimitation: 1
+      rpe_std_maximum: null
+      rpe_std_minimum: null
+      rpe_std_nolimitation: 1
+    parameters_value: []
+evaluation_form:
+  1_trajectory_comparison:
+    choose: 0
+  2_accuracy_metrics_comparison:
+    choose: 0
+  3_accuracy_metrics_comparison:
+    algorithm_id:
+    - 12
+    calculate_method: 1
+    choose: 0
+    dataset_id:
+    - 2
+    metric: ate_rmse
+  4_usage_metrics_comparison:
+    choose: 0
+  5_scatter_diagram:
+    choose: 0
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram:
+    choose: 1
+    extend_choose: 1
+    extend_multiple:
+    - 1
+    - 2
+    - 2.5
+    - 3
+    extend_threshold:
+    - 0.75
+    - 0.5
+    - 0.25
+    x-axis: cpu_mean
+    y-axis: ate_mean
+  7_3d_scatter_diagram:
+    choose: 1
+    extend_choose: 1
+    extend_multiple:
+    - 1
+    - 2
+    - 2.5
+    - 3
+    extend_threshold:
+    - 0.75
+    - 0.5
+    - 0.25
+    x-axis: general+image_width
+    y-axis: general+image_frequency
+    z-axis: ate_mean
+  8_repeatability_test:
+    choose: 0
+    metric: null
+  algorithm_dataset_type: 3
+group_description: 10 modes of 4 vision algorithm on 5 sequences; 5 image rate and
+  6 image resolution - totally 1500 configurations
+group_name: Paper_Vision_SLAM_Image_Exploration_Experiment_limitation_stereo_inertial

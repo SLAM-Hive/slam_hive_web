@@ -1,0 +1,58 @@
+lscpu
+架构：                           x86_64
+CPU 运行模式：                   32-bit, 64-bit
+字节序：                         Little Endian
+Address sizes:                   39 bits physical, 48 bits virtual
+CPU:                             8
+在线 CPU 列表：                  0-7
+每个核的线程数：                 2
+每个座的核数：                   4
+座：                             1
+NUMA 节点：                      1
+厂商 ID：                        GenuineIntel
+CPU 系列：                       6
+型号：                           158
+型号名称：                       Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz
+步进：                           9
+CPU MHz：                        3600.000
+CPU 最大 MHz：                   4200.0000
+CPU 最小 MHz：                   800.0000
+BogoMIPS：                       7200.00
+虚拟化：                         VT-x
+L1d 缓存：                       128 KiB
+L1i 缓存：                       128 KiB
+L2 缓存：                        1 MiB
+L3 缓存：                        8 MiB
+NUMA 节点0 CPU：                 0-7
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX disabled
+Vulnerability L1tf:              Mitigation; PTE Inversion; VMX conditional cach
+                                 e flushes, SMT vulnerable
+Vulnerability Mds:               Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Mitigation; IBRS
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled v
+                                 ia prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user
+                                  pointer sanitization
+Vulnerability Spectre v2:        Mitigation; IBRS, IBPB conditional, RSB filling
+                                 , PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Mitigation; Microcode
+Vulnerability Tsx async abort:   Mitigation; TSX disabled
+标记：                           fpu vme de pse tsc msr pae mce cx8 apic sep mtr
+                                 r pge mca cmov pat pse36 clflush dts acpi mmx f
+                                 xsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rd
+                                 tscp lm constant_tsc art arch_perfmon pebs bts 
+                                 rep_good nopl xtopology nonstop_tsc cpuid aperf
+                                 mperf pni pclmulqdq dtes64 monitor ds_cpl vmx s
+                                 mx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid s
+                                 se4_1 sse4_2 x2apic movbe popcnt tsc_deadline_t
+                                 imer aes xsave avx f16c rdrand lahf_lm abm 3dno
+                                 wprefetch cpuid_fault epb invpcid_single pti ss
+                                 bd ibrs ibpb stibp tpr_shadow vnmi flexpriority
+                                  ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 
+                                 smep bmi2 erms invpcid mpx rdseed adx smap clfl
+                                 ushopt intel_pt xsaveopt xsavec xgetbv1 xsaves 
+                                 dtherm ida arat pln pts hwp hwp_notify hwp_act_
+                                 window hwp_epp md_clear flush_l1d arch_capabili
+                                 ties

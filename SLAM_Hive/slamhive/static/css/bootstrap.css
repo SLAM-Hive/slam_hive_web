@@ -1666,11 +1666,26 @@ pre code {
   }
 }
 
+
+
+
+.table_show_list1 {
+  width: 100%;
+  height: 70%;
+  max-width: 100%;
+  max-height: 70%;
+}
+
+
+
+
+
 .table {
   width: 100%;
   max-width: 100%;
   margin-bottom: 1rem;
   background-color: transparent;
+  border-collapse: collapse;
 }
 
 .table th,
@@ -1699,17 +1714,18 @@ pre code {
 }
 
 .table-bordered {
-  border: 1px solid #dee2e6;
+  border: 1px solid #828485;
 }
 
 .table-bordered th,
 .table-bordered td {
-  border: 1px solid #dee2e6;
+  border: 1px solid #828485;
 }
 
 .table-bordered thead th,
 .table-bordered thead td {
   border-bottom-width: 2px;
+  border: 1px solid #020202;
 }
 
 .table-striped tbody tr:nth-of-type(odd) {
@@ -1954,6 +1970,78 @@ pre code {
   border: 0;
 }
 
+
+
+
+.form-control1 {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #495057;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+}
+
+.form-control1::-ms-expand {
+  background-color: transparent;
+  border: 0;
+}
+
+.form-control1:focus {
+  color: #495057;
+  background-color: #fff;
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control1::-webkit-input-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.form-control1::-moz-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.form-control1:-ms-input-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.form-control1::-ms-input-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.form-control1::placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.form-control1:disabled, .form-control1[readonly] {
+  background-color: #e9ecef;
+  opacity: 1;
+}
+
+select.form-control1:not([size]):not([multiple]) {
+  height: calc(2.25rem + 2px);
+}
+
+select.form-control1:focus::-ms-value {
+  color: #495057;
+  background-color: #fff;
+}
+
+
+
+
+
+
 .form-control {
   display: block;
   width: 100%;
@@ -1963,7 +2051,7 @@ pre code {
   color: #495057;
   background-color: #fff;
   background-clip: padding-box;
-  border: 1px solid #ced4da;
+  border: 1px solid #000000;
   border-radius: 0.25rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
@@ -2112,6 +2200,11 @@ select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.for
 }
 
 .form-group {
+  margin-bottom: 1rem;
+  /*border: 1px solid #000000; /* 设置边框为1像素宽的实线，颜色为 #cccccc */
+}
+
+.form-group-1 {
   margin-bottom: 1rem;
 }
 
@@ -3080,6 +3173,7 @@ fieldset:disabled a.btn {
   font-size: 0.875rem;
   line-height: 1.5;
   border-radius: 0.2rem;
+  background-color: #bcbfc4;
 }
 
 .btn-block {
@@ -7494,6 +7588,7 @@ button.bg-dark:focus {
 .mb-3,
 .my-3 {
   margin-bottom: 1rem !important;
+  border: 2px solid #828485;
 }
 
 .ml-3,

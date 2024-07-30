@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+{% block title %}MappingTaskConfig{% endblock %}
+
+{% block content %}
+    <br>
+    <table class="table table-bordered" sytle="border-collapse: collapse;" >
+        <thead>
+            <tr>
+                <th>Button</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>    
+                <tr>
+                    <td >
+                        <div style="text-align:left;">
+                            <button id="button" onclick="createGroup()" class='btn btn-primary'>Create Configuration Group</button>
+                        </div>
+                    </td>
+                    <td >Create a configuration group. You can select the Combination configurations and other configuration. Then the group will contain all the configurations you selected.</td>
+                </tr>  
+        </tbody>
+    </table>     
+    <br>
+    <table class="table table-bordered" sytle="border-collapse: collapse;" >
+        <tbody>    
+                <tr>
+                    <td >
+                        <div style="text-align:left;">
+                            Name:
+                        </div>
+                    </td>
+                    <td ><input class="value" style="width:500px;" id="group_name"></input></td>
+                </tr>  
+                <tr>
+                    <td >
+                        <div style="text-align:left;">
+                            Description:
+                        </div>
+                    </td>
+                    <td ><textarea rows="2" class="value" cols="53" id="group_description"></textarea></td>
+                </tr>  
+        </tbody>
+    </table>      
+    <br>  
+    
+    <div>
+        <h4>Combination Configuraton List</h4>
+        <div id="list" style="border: 2px  solid #020202; padding:10px;">
+            {% for comb_config in comb_configs %}
+                <div class="card mb-3" name="config_card" id={{config.id}} style="display: block;">
+                    <small class="combconfigId"> ID:{{ comb_config.id }}</small> <br>
+                    <div style="color:chocolate">Select: <input class="selected_comb" type="checkbox"></div>
+                    <p> <b>Name:</b> {{ comb_config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                    <b>Algorithm:</b> {{ comb_config.mappingTaskConf[0].algorithm.imageTag }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                    <b>Dataset:</b>  {{ comb_config.mappingTaskConf[0].dataset.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                    <b>Description:</b> <pre>{{ comb_config.description }} </pre>
+                    <br>
+                    <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                        <div class="btn-group" role="group">
+                            <a class="button" href="{{ url_for('show_combination_config', id = comb_config.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Show Each Configs" >
+                            </a>
+                            &nbsp;&nbsp;
+                        </div>
+                    </div>
+                </div>          
+            {% endfor %}     
+        </div>
+    </div>
+    <br>
+    <div>
+        <h4>Configuration List</h4>
+    </div> 
+    <div id="list" style="border: 2px  solid #020202; padding:10px;">
+        {% for config in configs %}
+            <div class="card mb-3" name="config_card" id={{config.id}} style="display: block;">
+                <small class="configId"> ID:{{ config.id }}</small> <br>
+                <div style="color:chocolate">Select: <input class="selected" type="checkbox"></div>
+                <p> <b>Name:</b> {{ config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Algorithm:</b> {{ config.algorithm.imageTag }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Dataset:</b>  {{ config.dataset.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Description:</b> <pre>{{ config.description }} </pre>
+            </div>
+        {% endfor %}     
+    </div>
+
+{% endblock %}   
+
+{% block scripts %}    
+    <script>
+        function createGroup(){
+            var selected = document.getElementsByClassName("selected");
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            console.log(selected.length)
+            for(var i=0; i<selected.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                if(selected[i].checked){
+                    values_json[k] = {};
+                    console.log(document.getElementsByClassName("configId")[i].innerHTML.split(':')[1])
+                    values_json[k]['parameterID'] = document.getElementsByClassName("configId")[i].innerHTML.split(':')[1];
+                    // Verify that the values_json[k]['value'] string satisfies the yaml format
+                    k=k+1;
+                }        
+            }
+            var selected_comb = document.getElementsByClassName("selected_comb");
+            var values_json_comb = {};
+            var k_comb = 0;
+            for(var i=0; i<selected_comb.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                if(selected_comb[i].checked){
+                    values_json_comb[k_comb] = {};
+                    console.log(document.getElementsByClassName("combconfigId")[i].innerHTML.split(':')[1])
+                    values_json_comb[k_comb]['parameterID'] = document.getElementsByClassName("combconfigId")[i].innerHTML.split(':')[1];
+                    // Verify that the values_json[k]['value'] string satisfies the yaml format
+                    k_comb=k_comb+1;
+                }        
+            }
+            
+            if(k == 0 && k_comb == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                if(document.getElementById("group_name").value == '')
+                {
+                    alert("please input the name!")
+                } else {
+
+                // create 
+                var parameter_values = {};
+                parameter_values['config'] = (values_json);
+                parameter_values['combconfig'] = (values_json_comb);
+                parameter_values['name'] = document.getElementById("group_name").value
+                parameter_values['description'] = document.getElementById("group_description").value
+
+                parameter_values_json = JSON.stringify(parameter_values)
+                console.log(parameter_values)
+                
+                // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                $.ajax(
+                    {
+                        url: '/config/create_group/submit',
+                        type: 'post',
+                        dataType: 'json',
+                        data: parameter_values_json,
+                        success: function(data){
+                            if(data.result == 'success') {
+                                alert("Save successfully!")
+                            } else if(data.result == 'version error') {
+                                alert("Version error!")
+                            }
+                        }
+                    }
+                )
+                }
+            }
+        }
+    </script>
+{% endblock %}
+
+
+
+      
+      
+      
+     
+
+
+
+
+    
+
+  
+
+
+
