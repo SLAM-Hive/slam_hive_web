@@ -1,0 +1,49 @@
+----------------------------------------------
+orb-slam3-ros-mono+left_camera+MH_01_easy+exploration_experiment
+
+-----
+Algorithm: orb-slam3-ros-mono
+Dataset: MH_01_easy
+Experiments to explore the parameter space.
+
+algorithm: mono mode with left camera (/cam0/image_raw) 参数不一样了（明天好好整整吧）
+image frequency: 1 | 2
+image resolution: 1 | 0.5
+nFeatures: 1000 | 2000
+Totally: 8 configurations
+
+Environment: Desktop (Memory: 32GB; CPU: Intel® Core™ i7-7700 CPU @ 3.60GHz × 8; Disk: 1TB) 
+
+-----
+# 在 mono 模式中不需要
+# 588,602
+# 591,603
+
+-----
+
+588:
+  1:
+    350: 20
+  2:
+    350: 10
+591:
+  1:
+    351: 752
+    352: 480
+    353: 600
+    354: 350
+    436: 458.654
+    437: 457.296
+    438: 367.215
+    439: 248.375
+
+    
+  0.5:
+    351: 376
+    352: 240
+    353: 300
+    354: 175
+    436: 229.327
+    437: 228.648
+    438: 183.6075
+    439: 124.1875

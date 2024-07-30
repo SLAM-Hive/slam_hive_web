@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+    <br>
+    <h4 style="text-align: center;  height:25;">
+            Combination task {{eval.mappingTask.id}}:  {{ config_dict["slam-hive-algorithm"] }} <small>with</small> {{ config_dict["slam-hive-dataset"] }}
+    </h4>
+    <br>
+    <h4>Parameters</h4>
+    <table class="table table-bordered">
+        
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Value </th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for paramValue in paramValues %}
+                <tr>
+                    <td class="paramId">{{ paramValue.algoParam.id }}</td>
+                    <td >{{ paramValue.algoParam.name }}</td>
+                    <td><pre>{{paramValue.algoParam.description}}</pre></td>
+                    <td><pre>{{paramValue.value}}</pre></td>
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>   
+    <br>
+
+    <h5>
+
+        Sub task 
+        {% for i in range(sub_task_number) %}
+
+            {% if sub_flags[i]  == False %}
+                {{i}}, 
+            {% endif %}
+
+        {% endfor %}
+        have been Failed.
+
+    </h5>
+
+    <h4>Sub-task comparison</h4>
+
+    <div class="row">
+        {% for evo_img_path in evo_img_list %}
+            <div class="col-md-6">
+                <img src="{{ url_for('get_img', imgpath=evo_img_path) }}" width="80%" height="80%"/>
+            </div>   
+        {% endfor %}
+    </div>
+
+    <h4>Choose certain tasks to compare</h4>
+    <h6>Maybe take a few minutes. Please be patient.<br>Or if you see the page loading have finished but no result, please click the "show" again.</h6>
+
+    <div class="row">
+        <table class="table table-bordered">
+
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Select</th>
+                </tr>
+            </thead>
+            <tbody>
+                {%for i in range(sub_task_number) %}
+                {% if sub_flags[i] == True %}
+                <tr>
+                    
+                    <td>task {{i}}</td>
+                    <td>
+                        <input type="checkbox" value={{i}} name="sub_task"/>
+                    </td>
+                </tr>
+                {% endif %}
+
+                
+                {%endfor%}
+                <tr>
+                    <td></td>
+                    <td>
+                        <input class='btn btn-default btn-sm' style="color: cornflowerblue;" type="submit" value="show" onclick="show_certain()">
+                    </td>
+                </tr>
+    </div>
+
+
+    </table>
+    <div  class="row">
+        <h4>Choose one sub-task to show</h4>
+        How to choose: You can find that some parameters have a set of values (such as: "nFeatures: 1000,1250,1500"). So you can choose your wanted combination of parameters by putting them together in order.
+        <br>
+        Such as: The parameters are: "a: 1,2,3 b:1,2 c:1". So the "task 0" combination parameter is: "a: 1 b: 1 c: 1", and the "task 1" one is: "a: 2 b: 1 c: 1", and so on.
+        <br>
+        <table class="table table-bordered">
+
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Select</th>
+                </tr>
+            </thead>
+            <tbody>
+                {%for i in range(sub_task_number) %}
+                {% if sub_flags[i] == True %}
+                <tr>
+
+                    <td>task {{i}}</td>
+                    <td>
+                        <a class="button" href="{{ url_for('show_one_evo_result', eval_id=eval.id, sub_id=i) }}">
+                            <input class='btn btn-default btn-sm' style="color: cornflowerblue;" type="submit" value="choose">
+                        </a> 
+                    </td>
+                </tr>
+
+
+                {% endif %}
+                {%endfor%}
+            </tbody>  
+
+
+        </table>
+
+    </div>
+
+    <script type="text/javascript">
+        function show_certain()
+        {
+            // 判断 每个checkbox是否被选中
+            obj = document.getElementsByName("sub_task")
+            var choose_check = []
+            choose_number = 0
+            for(k in obj)
+            {
+                if(obj[k].checked)
+                {
+                    choose_check.push(obj[k].value)
+                    choose_number += 1
+                }
+                
+            }
+            if(choose_number <= 1 )
+            {
+                alert("please choose at least 2 tasks!")
+            }
+            else
+            {
+                // alert(choose_check)
+                choose_str = ""
+                for(i = 0; i < choose_number - 1; i++)
+                {
+                    choose_str += choose_check[i] + "-"
+                }
+                choose_str += choose_check[choose_number - 1]
+
+                window.location.href = "/eval/show_certain_compare_combination/" + "{{eval.id}}" + "/" + "{{sub_task_number}}" + "/" + choose_str
+                //提交任务
+
+            }
+        }
+    </script>
+
+    
+{% endblock %}

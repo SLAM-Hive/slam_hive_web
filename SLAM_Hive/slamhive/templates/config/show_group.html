@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block title %}{% endblock %}
+
+{% block content %}
+
+    <!-- <br>
+    
+    <div style="text-align:left;">
+        <a class="button" href="{{ url_for('index_combination_config') }}" >
+            <input class="btn btn-primary" type="submit" value="Return" >
+        </a>
+    </div> -->
+    <br>
+    <div class="card mb-3">
+        <small class="group_configId"> ID:{{ group_config.id }}</small> <br>
+        <p> <b>Name:</b> {{ group_config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+        <b>Description:</b> <pre>{{ group_config.description }} </pre> <br>
+    </div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Show Details</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>    
+            {% for config in configs %}
+                <tr>
+                    <td class="config_id">{{ config.id }}</td>
+                    <td>{{ config.name}}</td>
+                    {% if mappingTasks_number[config.id] != 0 %}
+                        <td style="color:#445ef7">already create mapping task</td>
+                    {% else %}
+                        <td style="color:#eb2214">need to create mapping task</td>
+                    {% endif %}
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a class="button" href="{{ url_for('show_config', id=config.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
+                            </a>
+                            &nbsp;&nbsp;
+                        </div>             
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('delete_group_config', config_id=config.id, group_id = group_config.id) }}">
+                            {{ form.csrf_token }} 
+                            {{ form.submit(class="btn btn-primary", onclick="return confirm('Are you sure?');") }} 
+                        </form>  
+                    </td>
+                </tr> 
+            {% endfor %}     
+        </tbody>
+    </table>
+    <div>
+        <h5>Disk configuration</h5>
+    </div> 
+    <table class="table table-bordered" sytle="border-collapse: collapse;" >
+        <thead>
+            <tr>
+                <th>Size</th>
+                <th>Category</th>
+                <th>performance level</th>
+            </tr>
+        </thead>
+        <tbody>    
+                <tr>
+                    <td >
+                        <div style="text-align:left;">
+                            <input id="disk_size" size="30" placeholder="disk size of the instance(GB)"></input>
+                        </div>
+                    </td>
+                    <td >
+                        <div style="text-align:left;">
+                            <input id="disk_category"  size="30" placeholder="disk category"></input>
+                        </div>
+                    </td>
+                    <td >
+                        <div style="text-align:left;">
+                            <input id="disk_performance_level" size="30" placeholder="If disk category is cloud_essd"></input>
+                        </div>
+                    </td>
+                </tr>  
+        </tbody>
+    </table>   
+    <div>
+        <h5>instance configuration</h5>
+    </div> 
+    <table class="table table-bordered" sytle="border-collapse: collapse;" >
+
+        <tbody>    
+            <tr>
+                <td>Instance type</td>
+                <td>Work node image id</td>
+                <td>Security group id</td>
+            </tr>
+                <tr>
+                    <td >
+                        <div style="text-align:left;">
+                            <input id="instance_type" size="30" placeholder="instance type name"></input>
+                        </div>
+                    </td>
+                    <td >
+                        <div style="text-align:left;">
+                            <input id="instance_image_id"  size="30" placeholder="work node image id(shared or created by yourself)"></input>
+                        </div>
+                    </td>
+                    <td >
+                        <div style="text-align:left;">
+                            <input id="instance_security_group_id" size="30" placeholder="instance security group id(shared or created by yourself)"></input>
+                        </div>
+                    </td>
+                </tr>  
+        </tbody>
+    </table>   
+    <br>
+    <div class="btn-group" role="group">
+        <button id="button" onclick="createBatchOfMappingTask()" class='btn btn-primary'>Create MappingTask (Cluster)</button>
+        &nbsp;&nbsp;
+        <button id="button" onclick="createBatchOfMappingTaskAliyun()" class='btn btn-primary'>Create MappingTask (Aliyun)</button>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+    var socket = io('/');
+    socket.on('update_eval_state', function(res) {
+        console.log(res.data);
+        alert(res.data);
+        location.reload();
+        });
+    });
+
+    function createBatchOfMappingTask(){
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            var configs = document.getElementsByClassName("config_id")    
+           for(var i = 0; i < configs.length; i++)
+            {
+                values_json[k] = {};
+                values_json[k]['parameterID'] = configs[i].innerHTML
+                k++
+            }
+            var parameter_values = JSON.stringify(values_json);
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/mappingtask/create/batch',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Save successfully!")
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+        }
+        function createBatchOfMappingTaskAliyun(){
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            var configs = document.getElementsByClassName("config_id")    
+           for(var i = 0; i < configs.length; i++)
+            {
+                values_json[k] = {};
+                values_json[k]['parameterID'] = configs[i].innerHTML
+                k++
+            }
+                //Aliyun configuration
+                disk_size = document.getElementById("disk_size").value;
+                disk_category = document.getElementById("disk_category").value;
+                disk_performance_level = document.getElementById("disk_performance_level").value
+
+                instance_type = document.getElementById("instance_type").value;
+                instance_image_id = document.getElementById("instance_image_id").value;
+                instance_security_group_id = document.getElementById("instance_security_group_id").value;
+
+                values_json[k] = {}
+                values_json[k]['disk_size'] = disk_size
+                values_json[k]['disk_category'] = disk_category
+                values_json[k]['disk_performance_level'] = disk_performance_level
+                values_json[k]['instance_type'] = instance_type
+                values_json[k]['instance_image_id'] = instance_image_id
+                values_json[k]['instance_security_group_id'] = instance_security_group_id
+
+            var parameter_values = JSON.stringify(values_json);
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/mappingtask/create/batch_aliyun',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("Save successfully!")
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                }
+                            }
+                        }
+                    )
+        }
+</script>
+
+{% endblock %}
+

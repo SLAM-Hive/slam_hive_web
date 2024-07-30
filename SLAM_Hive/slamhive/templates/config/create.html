@@ -1,6 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}MappingTaskConfig{% endblock %}
 {% block content %}
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/configuration:create" class="floating-button"  target="_blank">Wiki Link</a>
+
     <br>
     <h5 style="text-align: center"><b>Mapping Task Configuration Creation</b></h5>
     <br>
@@ -22,7 +47,7 @@
         </select>
     </div>
 
-    <br><p><b>Step 2： Configuration Naming </b></p>
+    <br><p><b>Step 2： Configuration Info </b></p>
     <div class="form-group">
         <label>Mapping Task Configuration Name</label>
         <input type="text" name="name" id="configName" class='form-control' required>
@@ -35,6 +60,11 @@
     <br>
 
     <br><p><b>Step 3： Parameter Selection</b></p>
+    temparory annotation: <br>
+    ID name description type is fixed;<br>
+    class-name Key Value value-type can be change <br>
+    no default value now<br>
+
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -42,7 +72,10 @@
                 <th>Name</th>
                 <th >Description</th>
                 <th>Type</th>
-                <th>Selection </th>
+                <th>Algo/Dataset Name</th>
+                <th style="max-width: 70px; word-wrap: break-word;">Selection </th>
+                <th>Key</th>
+                <th>Value Type</th>
                 <th>Value </th>
             </tr>
         </thead>
@@ -50,11 +83,22 @@
             {% for parameter in parameters %}
             <tr>
                 <td class="paramId">{{ parameter.id }}</td>
-                <td >{{ parameter.name }}</td>
-                <td><pre>{{parameter.description}}</pre> </td>
-                <td>{{parameter.paramType}}   </td>
-                <td><input class="selected" type="checkbox"></td>
-                <td width="500px"><textarea rows="8" class="value" cols="50"></textarea></td>    
+                <td style="max-width: 200px; word-wrap: break-word;">{{ parameter.name }}</td>
+                <td style="max-width: 300px; word-wrap: break-word;">{{parameter.description}}</td>
+                <td style="max-width: 80px; word-wrap: break-word;">{{parameter.paramType}}</td>
+                <td >
+                    <textarea rows="1" class="className" cols="10" placeholder="default: ">{{parameter.className}}</textarea>           
+                </td>
+                <td style="max-width: 50px; word-wrap: break-word;"><input class="selected" type="checkbox"></td>
+                <td>
+                    <textarea rows="1" class="keyName" cols="10" placeholder="">{{parameter.keyName}}</textarea>       
+                </td>
+                <td>
+                    <textarea rows="1" class="valueType" cols="10" placeholder="">{{parameter.valueType}}</textarea>       
+                </td>
+                <td>
+                    <textarea rows="1" class="value" cols="10"  placeholder="">{{parameter.value}}</textarea>
+                </td>
             </tr>
             {% endfor %} 
         </tbody>
@@ -75,7 +119,7 @@
                 var values_json = {};
                 var k = 0;
                 var format_check = true;
-                var reg_exp_common = /^[0-9a-zA-Z_/]+[:]\s[-0-9a-zA-Z_./]+$/m;//regular expression
+                var reg_exp_common = /^[0-9a-zA-Z_/]+[:]\s[-0-9\,a-zA-Z_./]+$/m;//regular expression
                 var reg_exp_matrix = /^[0-9a-zA-Z_]+:\s\[-*[0-9.]+([,]\s*-*[0-9.]+)+\]$/g;
                 //record selected parametr values
                 for(var i=0; i<selected.length; i++){
@@ -84,15 +128,18 @@
                     if(selected[i].checked){
                         values_json[k] = {};
                         values_json[k]['parameterID'] = document.getElementsByClassName("paramId")[i].innerHTML;
+                        values_json[k]['className'] = document.getElementsByClassName("className")[i].value;
+                        values_json[k]['keyName'] = document.getElementsByClassName("keyName")[i].value;
+                        values_json[k]['valueType'] = document.getElementsByClassName("valueType")[i].value;
                         values_json[k]['value'] = document.getElementsByClassName("value")[i].value;
                         // Verify that the values_json[k]['value'] string satisfies the yaml format
                         var is_common = reg_exp_common.test(values_json[k]['value']);//Regular expression test() method, return value Boolean
                         var is_matrix = reg_exp_matrix.test(values_json[k]['value']);
-                        if(!is_common && !is_matrix){
-                            format_check = false;
-                            alert("Format of \'" + values_json[k]['value'] + "\' is wrong!");
-                            break;
-                        }
+                        // if(!is_common && !is_matrix){
+                        //     format_check = false;
+                        //     alert("Format of \'" + values_json[k]['value'] + "\' is wrong!");
+                        //     break;
+                        // }
                         k=k+1;
                     }        
                 }
@@ -114,7 +161,15 @@
                             dataType: 'json',
                             data: parameter_values,
                             success: function(data){
-                                alert("Save successfully!");
+                                // alert("Save successfully!");
+                                // alert(data);
+                                // console.log(data.result)
+                                if(data.result == 'success') {
+                                    alert("Save successfully!")
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                }
+
                                 btnfun();
                             }
                         }

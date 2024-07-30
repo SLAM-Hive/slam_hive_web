@@ -1,0 +1,55 @@
+{% from 'bootstrap4/form.html' import render_field, render_form %}
+
+{% block content %}
+<br>
+<h5>Configurations ID List: [ 
+    {% for config in configs %}
+    {{ config.id }},
+    {% endfor %}     
+    ]
+</h5>
+
+        <br>
+        {% for config in configs %}
+            <div class="card mb-3">
+                <small class="configId"> ID:{{ config.id }}</small> <br>
+                <p> <b>Name:</b> {{ config.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Algorithm:</b> {{ config.algorithm.imageTag }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Dataset:</b>  {{ config.dataset.name }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                <b>Description:</b> <pre>{{ config.description }} </pre> <br>
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('show_config', id=config.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Show Config Detials" >
+                        </a>
+                        &nbsp;&nbsp;
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('show_evaluate', id=config.mappingTasks[0].evaluation.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Show Evaluation Details">
+                        </a>   
+                        &nbsp;&nbsp;
+                    </div>
+                </div>
+                <br>
+            </div>
+
+        {% endfor %}     
+{% endblock %}   
+
+
+
+      
+      
+      
+     
+
+
+
+
+    
+
+  
+
+
+

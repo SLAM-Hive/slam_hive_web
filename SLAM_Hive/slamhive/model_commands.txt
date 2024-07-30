@@ -1,0 +1,108 @@
+# create new table: evoresults
+
+create table evoresults(
+    id int primary key not null auto_increment,
+    evaluation_id int not null,
+    ate_rmse float not null,
+    ate_mean float not null,
+    ate_median float not null,
+    ate_std float not null,
+    ate_min float not null,
+    ate_max float not null,
+    ate_sse float not null,
+    rpe_rmse float not null,
+    rpe_mean float not null,
+    rpe_median float not null,
+    rpe_std float not null,
+    rpe_min float not null,
+    rpe_max float not null,
+    rpe_sse float not null,
+    foreign key (evaluation_id) references evaluation (id)
+);
+
+create table performanceresults(
+    id int primary key not null auto_increment,
+    mappingtask_id int not null,
+    max_cpu float not null,
+    mean_cpu float not null,
+    max_ram float not null
+);
+
+
+
+# new tables in database: slamhiveDB2
+
+
+# metadata (new table)
+
+create table metavalue(
+    id int primary key not null auto_increment,
+    name varchar(128) not null,
+    value varchar(256) not null,
+    value_type varchar(32) not null
+);
+
+
+# parametervalue (changed)
+
+create table parametervalue(
+    id int primary key not null auto_increment,
+    name varchar(128) not null,
+    algoParam_id int,
+    foreign key (algoParam_id) references algoparameter (id)
+);  
+
+
+# combmappingtaskconfig
+
+create table combmappingtaskconfig(
+    id int primary key not null auto_increment,
+    name varchar(128) not null,
+    description text
+); 
+
+
+# performanceresults
+# * make mappingtask_id as foreign key (maybe forget last time)
+
+create table performanceresults(
+    id int primary key not null auto_increment,
+    mappingtask_id int not null,
+    max_cpu float not null,
+    mean_cpu float not null,
+    max_ram float not null,
+    foreign key (mappingtask_id) references mappingtask (id)
+);
+
+
+
+# create related table
+
+#  need to create: (N - N)
+## mappingtaskconfig_parametervalue
+## parametervalue_metavalue
+## combmappingtaskconfig_mappingtaskconfig
+
+create table mappingtaskconfig_parametervalue(
+    id int primary key not null auto_increment,
+    mappingtaskconfig_id int,
+    parametervalue_id int,
+    foreign key(mappingtaskconfig_id) references mappingtaskconfig(id),
+    foreign key(parametervalue_id) references parametervalue(id)
+);
+
+create table parametervalue_metavalue(
+    id int primary key not null auto_increment,
+    parametervalue_id int,
+    metavalue_id int,
+    foreign key(parametervalue_id) references parametervalue(id),
+    foreign key(metavalue_id) references metavalue(id)
+);
+
+create table combmappingtaskconfig_mappingtaskconfig(
+    id int primary key not null auto_increment,
+    combmappingtaskconfig_id int,
+    mappingtaskconfig_id int,
+    foreign key(combmappingtaskconfig_id) references combmappingtaskconfig(id),
+    foreign key(mappingtaskconfig_id) references mappingtaskconfig(id)    
+);

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+    <br>
+    <h4 style="text-align: center;  height:25;">
+            Combination task {{eval.mappingTask.id}}:  {{ config_dicts[0]["slam-hive-algorithm"] }} <small>with</small> {{ config_dicts[0]["slam-hive-dataset"] }}
+    </h4>
+    <br>
+    <h4>Parameters</h4>
+
+
+    {%for i in range(config_dicts_len)%}
+
+    <h5>sub-task-{{choose_check_list[i]}}-parameter:</h5>
+    <table  class="table table-bordered">
+        <tbody>
+                
+                 {%for key,value in config_dicts[i].items()%}
+                 {% if value != None %}
+        
+                    {%if key == "algorithm-parameters" %}
+                    <tr>
+                        <td>{{key}}</td>
+        
+                        <td>
+                        {%for sub_key, sub_value in value.items()%}
+                            <pre>{{sub_key}}: {{sub_value}}</pre>
+
+                        {%endfor%}
+                        </td>
+                    </tr>
+                    {%endif%}
+        
+                    {%if key == "dataset-parameters" %}
+                    <tr>
+                        <td>{{key}}</td>
+                        <td>
+                        {%for sub_key, sub_value in value.items()%}
+                            <pre>{{sub_key}}: {{sub_value}}</pre>
+
+                        {%endfor%}
+                        </td>
+                    </tr>
+                    {%endif%}
+        
+                    {%if key == "algorithm-remap" %}
+                    <tr>
+                        <td>{{key}}</td>    
+                        <td>
+                        {%for sub_key, sub_value in value.items()%}
+                            <pre>{{sub_key}}: {{sub_value}}</pre>
+
+                        {%endfor%}
+                        </td>
+                    </tr>
+                    {%endif%}
+        
+                    {%if key == "dataset-remap" %}
+                    <tr>
+                        <td>{{key}}</td>
+                        <td>
+                        {%for sub_key, sub_value in value.items()%}
+                            <pre>{{sub_key}}: {{sub_value}}</pre>
+
+                        {%endfor%}
+                        </td>
+                    </tr>
+                    {%endif%}
+        
+                 {%endif%}
+                 {%endfor%}
+        
+
+        </tbody>
+
+    </table>
+    {%endfor%}
+
+
+ 
+    <h4>Sub-task comparison</h4>
+
+    <div class="row">
+        {% for evo_img_path in evo_img_list %}
+            <div class="col-md-6">
+                <img src="{{ url_for('get_img', imgpath=evo_img_path) }}" width="80%" height="80%"/>
+            </div>   
+        {% endfor %}
+    </div>
+
+
+
+    
+{% endblock %}

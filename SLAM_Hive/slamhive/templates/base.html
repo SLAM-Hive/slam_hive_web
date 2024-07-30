@@ -10,9 +10,17 @@
             <h2>SLAM Hive<small>: A SLAM Evaluation Benchmark System</small></h2>
         </div>
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='./css/bootstrap.css') }}">
+
+
+        <!-- <script src="https://potree.org/potree/potree.js"></script> -->
+
+        
     {% endblock head %}
 </head>
 <body>
+
+
+
 {% block nav %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
@@ -30,13 +38,27 @@
                     {{ render_nav_item('index_config', 'MappingTaskConfig') }}
                     {{ render_nav_item('index_mappingtask', 'MappingTask') }}
                     {{ render_nav_item('index_evaluate', 'Evaluation') }}
+                    {{ render_nav_item('index_customanalysis', 'Custom Analysis') }}
                 </ul>
             </div>
         </div>
     </nav>
+
+<!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> 顺序不能变-->
+
+
+
+
+
+<script src="{{ url_for('static', filename='./js/jquery-3.5.1.slim.min.js') }}"></script>
+<script src="{{ url_for('static', filename='./js/popper.min.js') }}"></script>
+<script src="{{ url_for('static', filename='./js/bootstrap.min.js') }}"></script>
+
 {% endblock nav %}
 
-<main class="container-fluid" style="padding-left: 10%;padding-right: 10%;">
+<main class="container-fluid" style="padding-left: 2%;padding-right: 2%;">
     <div class="row">
         <div class="col-md-12">
             {% block content %}{% endblock content %}
@@ -47,7 +69,7 @@
     {% block footer %}
     <footer>
         <p class="float-left">
-            <small> &copy; 2022 <a href="https://robotics.shanghaitech.edu.cn" title="Written by MARS Lab" target="_blank">ShanghaiTech MARS Lab</a> -
+            <small> &copy; 2024 <a href="https://robotics.shanghaitech.edu.cn" title="Written by MARS Lab" target="_blank">ShanghaiTech MARS Lab</a> -
                 <a href="https://star-center.shanghaitech.edu.cn/gitlab/slam-hive" title="Fork me on GitHub" target="_blank">GitLab</a> -
                 <a href="https://flask.palletsprojects.com/en/2.0.x" title="Python Flask Web" target="_blank">Flask</a> -
                 <a href="https://www.docker.com" title="Docker" target="_blank">Docker</a>

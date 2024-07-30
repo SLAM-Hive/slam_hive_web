@@ -2,6 +2,144 @@
 {% block title %}MappingTask{% endblock %}
 
 {% block content %}
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/mappingtask" class="floating-button"  target="_blank">Wiki Link</a>
+
+<br>  
+
+{% if version == 'workstation' or version == 'cluster' or version == 'aliyun' %}
+    
+<table class="table table-bordered" sytle="border-collapse: collapse;" >
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>Description</th>
+            <th>MappingTasks ID</th>
+        </tr>
+    </thead>
+    <tbody>    
+            <tr>
+                <td >
+                    <div style="text-align:left;">
+                        <button id="button" onclick="createBatchOfEvo_list()" class='btn btn-primary'>Create Evo Evaluation ①</button>
+                    </div>
+                </td>
+                <td >Create a batch of evaluations. Select the mapping task by choosing the checkbox ①, and then they will evaluate at the same time.</td>
+                <td>
+                    <textarea id="eval1" rows="2" class="value" cols="100" placeholder="input the id: [id1, id2. ...]"></textarea>
+                </td>
+            </tr>  
+            <tr>
+                <td >
+                    <div style="text-align:left;">
+                        <button id="button" onclick="createMultiOfEvo_list()" class='btn btn-primary'>Create Evo Evaluation ②</button>
+                    </div>
+                </td>
+                <td >Create a batch of evaluations. Select the mapping task by choosing the checkbox ②, input the name, description, and then they will evaluate the checked mapping task and output the compared results in one plots.</td>
+                <td>
+                    <textarea id="eval2" rows="2" class="value" cols="100" placeholder="input the id: [id1, id2. ...]"></textarea>
+                </td>
+            </tr>  
+    </tbody>
+</table>        
+
+<br>
+<h4>Create EvoEvaluation ②</h4>
+
+<table class="table table-bordered" sytle="border-collapse: collapse;" >
+    <tbody>    
+            <tr>
+                <td >
+                    <div style="text-align:left;">
+                        Name:
+                    </div>
+                </td>
+                <td ><input class="value" style="width:500px;" id="multi_eval_name"></input></td>
+            </tr>  
+            <tr>
+                <td >
+                    <div style="text-align:left;">
+                        Description:
+                    </div>
+                </td>
+                <td ><textarea rows="2" class="value" cols="53" id="multi_eval_description"></textarea></td>
+            </tr>  
+    </tbody>
+</table>      
+<br>
+
+{%endif%}
+
+<div>
+    <h4>Search</h4>
+</div>
+<div style="border: 2px  solid #020202; padding:10px; width: 85%;">
+    <div style="width: 100%">
+        <table id="algo_table" class="table table-bordered" sytle="border-collapse: collapse;" >
+            <tbody id="algo_table_body">    
+                    <tr>
+                        <td>Algorithm</td>
+                        <td >
+                            <select autofocus name="algo_id" class='form-control' multiple="multiple">
+                                <option selected="selected" value="All">All</option>
+                                {% for algo in algos %}
+                                    <option selected="selected" value="{{algo.id}}">{{algo.imageTag}}</option> 
+                                {% endfor %} 
+                            </select>
+                        </td>
+                    </tr>   
+                    <tr>
+                        <td>Dataset</td>
+                        <td>
+                            <select autofocus name="dataset_id" class='form-control'  multiple="multiple">
+                                <option selected="selected" value="All">All</option>
+                                {% for dataset in datasets %}
+                                    <option selected="selected" value="{{dataset.id}}">{{dataset.name}}</option> 
+                                {% endfor %} 
+                            </select>
+                        </td>
+                    </tr>  
+                    <tr>
+                        <td>Parameters</td>
+                        <td>
+                            <textarea id="parameter_id" rows="5" class="value" cols="100" placeholder="input the key: value..."></textarea>
+                        </td>
+                    </tr>    
+
+            </tbody>
+        </table>  
+        <input class="btn btn-primary" type="submit" value="Search" onclick="search()">
+    </div>
+
+</div>
+
+<br>
+<div id="list"></div>
+
+<br>
+<h4>Mapping Task List</h4>
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -9,19 +147,38 @@
             <th>Algorithm</th>
             <th>Dataset</th>
             <th>Configuration</th>
+            <th>Show Detail</th>
             <th>Create Time</th>
             <th>State</th>
+            <th>Trajectory</th>
+            {% if version == 'workstation' or version == 'cluster' or version == 'aliyun' %}
             <th>Delete</th>
             <th>Evaluation</th>
+            {%endif%}
+            <!-- <th>StateInfo</th> -->
+            <!-- <th>Select ①</th>
+            <th>Select ②</th> -->
         </tr>
     </thead>
     <tbody>    
         {% for mappingtask in mappingtasks %}
             <tr>
-                <td>{{ mappingtask.id }}</td>
+                <td class="mappingTaskId">{{ mappingtask.id }}</td>
                 <td>{{ mappingtask.mappingTaskConf.algorithm.imageTag }}</td>
                 <td>{{ mappingtask.mappingTaskConf.dataset.name }}</td>
                 <td>{{ mappingtask.mappingTaskConf.id }}: {{mappingtask.mappingTaskConf.name}}</td>
+                <td>
+                    {% if mappingtask.state == 'Finished' %}
+                    <div class="btn-group" role="group">
+                        <a class="button" href="{{ url_for('show_mappingtask', id=mappingtask.id) }}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
+                        </a>
+                        &nbsp;&nbsp;
+                    </div>
+                    {% endif %}
+
+
+                </td>
                 <td>{{ mappingtask.time }}</td>
                 {% if mappingtask.state == 'Finished' %}
                     <td style="color:#4CAF50">{{ mappingtask.state }}</td>
@@ -29,27 +186,63 @@
                     <td style="color:#445ef7">{{ mappingtask.state }}</td>
                 {% elif mappingtask.state == 'Failed' %}
                     <td style="color:#eb1d1d">{{ mappingtask.state }}</td>
-                {% else %}
-                    <td style="color:#f56ade">{{ mappingtask.state }}</td>
+                {% elif mappingtask.state == 'Waiting' %}
+                    <td style="color:#799123">{{ mappingtask.state }}</td>
                 {% endif %}
+
+                {% if mappingtask.trajectory_state == 'Running' %}
+                    <td style="color:#445ef7">{{ mappingtask.trajectory_state }}</td>
+                {% elif mappingtask.trajectory_state == 'Success' %}
+                    <td style="color:#4CAF50">{{ mappingtask.trajectory_state }}</td>
+                {% elif mappingtask.trajectory_state == 'Unsuccess' %}
+                    <td style="color:#eb1d1d">{{ mappingtask.trajectory_state }}</td>
+                {% elif mappingtask.trajectory_state == 'Waiting' %}
+                    <td style="color:#799123">{{ mappingtask.trajectory_state }}</td>
+                {% endif %}
+                
+
+                {% if version == 'workstation' or version == 'cluster' or version == 'aliyun' %}
+
                 <td>
                     <form method="post" action="{{ url_for('delete_mappingtask', id=mappingtask.id) }}">
                         {{ form.csrf_token }} 
                         {{ form.submit(class='btn btn-default btn-sm', onclick="return confirm('Are you sure?');") }} 
                     </form>
                 </td>
-                {% if mappingtask.state == 'Finished' and mappingtask.evaluation == None %}
+                {% if mappingtask.state == 'Finished' and mappingtask.evaluation == None and mappingtask.trajectory_state != 'Unsuccess'%}
                     <td>
                         <a class="button" href="{{ url_for('create_evaluate', id=mappingtask.id) }}">
                             <input class='btn btn-default btn-sm' type="submit" value="Evaluate"
                             onclick="return confirm('Are you sure?');">
                         </a> 
                     </td>
-                {% elif  mappingtask.evaluation != None %}
+                    <!-- <td><input class="selected" type="checkbox" name="selected1"></td>
+                    <td><div name = 'selected2'></div></td> -->
+
+                {% elif  mappingtask.evaluation != None and mappingtask.trajectory_state != 'Unsuccess'%}
                     <td></td>
+                    <!-- <td><div name="selected1"></div></td>
+                    <td><input class="selected" type="checkbox" name="selected2"></td> -->
                 {% else %}
-                <td></td>
+                    <td></td>
+                    <!-- <td><div name = 'selected1'></div></td>
+                    <td><div name = 'selected2'></div></td> -->
                 {% endif %}
+
+                <!-- {%if mappingtask.state == 'Running' and mappingtask.description.split('-')[0] == 'Combination' %}
+                <td>
+                    <a class="button" href="{{ url_for('check_combination_task_running', id=mappingtask.id) }}">
+                        <input class='btn btn-default btn-sm' type="submit" value="check"
+                        onclick="return confirm('Are you sure?');">
+                    </a> 
+                </td>
+
+                    
+
+                {% endif %} -->
+
+                {%endif%}
+                
             </tr> 
         {% endfor %}     
     </tbody>
@@ -66,6 +259,286 @@
         location.reload();
         });
     });
+
+    function search(){
+            algo_list = $('select[name="algo_id"]').val();
+            dataset_list = $('select[name="dataset_id"]').val();
+            parameters = document.getElementById('parameter_id').value;
+            // console.log(algo_list)
+            // console.log(dataset_list)
+            // console.log(parameters)
+            var values_json = {};
+            values_json['algo_list'] = algo_list
+            values_json['dataset_list'] = dataset_list
+            values_json['parameters'] = parameters
+            var parameter_values = JSON.stringify(values_json);
+            
+
+            $.ajax(
+                        {
+                            url: '/mappingtask/search/submit',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            complete: function(data){
+                                console.log(data.responseText)
+                                $('#list').html(data.responseText)
+                                // console.log(data.data)
+                                // ret = data.data
+                                // cards = document.getElementsByName("config_card")
+                                // // console.log(cards.length)
+                                // for(i = 0; i < cards.length; i++)
+                                // {
+                                //     console.log(parseInt(cards[i].id), ret.indexOf(parseInt(cards[i].id)))
+                                    
+                                //     if(ret.indexOf(parseInt(cards[i].id)) == -1)
+                                //     {
+                                //         cards[i].style.display = 'none'
+                                //     } else {
+                                //         cards[i].style.display = 'block'
+                                //     }
+                                // }
+                                alert("Search successfully!");
+                                //TODO 没有判断不合法的情况
+                            }
+                        }
+                    )
+            
+            // var httpRequest = new XMLHttpRequest();//第一步：创建需要的对象
+            // httpRequest.open('POST', "/config/search/submit", true); //第二步：打开连接/***发送json格式文件必须设置请求头 ；如下 - */
+            // httpRequest.setRequestHeader("Content-type","application/json");//设置请求头 注：post方式必须设置请求头（在建立连接后设置请求头）var obj = { name: 'zhansgan', age: 18 };
+            // httpRequest.send(parameter_values);//发送请求 将json写入send中
+        }
+
+    // function createBatchOfEvo(){
+    //         // var selected = document.getElementsByClassName("selected");
+    //         var selected = document.getElementsByName("selected1")
+    //         var values_json = {};
+    //         var k = 0;
+    //         // record selected parametr values
+    //         console.log(selected.length)
+    //         for(var i=0; i<selected.length; i++){
+    //             // alert("paramId="+paramID);//seleted_algo=id
+    //             if(selected[i].checked){
+    //                 values_json[k] = {};
+    //                 // console.log(document.getElementsByClassName("mappingTaskId")[i].innerHTML.split(':')[1])
+    //                 values_json[k]['mappingTaskID'] = document.getElementsByClassName("mappingTaskId")[i].innerHTML
+    //                 // Verify that the values_json[k]['value'] string satisfies the yaml format
+    //                 k=k+1;
+    //             }        
+    //         }
+    //         if(k == 0) {
+    //             // no selected
+    //             alert("Please select at least 1 config!")
+    //         } else {
+    //             var parameter_values = JSON.stringify(values_json);
+    //                 // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+    //                 $.ajax(
+    //                     {
+    //                         url: '/eval/create/batch',
+    //                         type: 'post',
+    //                         dataType: 'json',
+    //                         data: parameter_values,
+    //                         success: function(data){
+    //                             alert("Save successfully!");
+    //                             // btnfun();
+    //                         }
+    //                     }
+    //                 )
+    //             // console.log(values_json)
+    //         }
+    //     }
+    //     function createMultiOfEvo(){
+    //         // var selected = document.getElementsByClassName("selected");
+    //         var selected = document.getElementsByName("selected2")
+    //         var values_json = {};
+    //         var k = 0;
+    //         // record selected parametr values
+    //         console.log(selected.length)
+    //         for(var i=0; i<selected.length; i++){
+    //             // alert("paramId="+paramID);//seleted_algo=id
+    //             if(selected[i].checked){
+    //                 values_json[k] = {};
+    //                 // console.log(document.getElementsByClassName("mappingTaskId")[i].innerHTML.split(':')[1])
+    //                 values_json[k]['mappingTaskID'] = document.getElementsByClassName("mappingTaskId")[i].innerHTML
+    //                 // Verify that the values_json[k]['value'] string satisfies the yaml format
+    //                 k=k+1;
+    //             }        
+    //         }
+    //         if(k == 0) {
+    //             // no selected
+    //             alert("Please select at least 1 config!")
+    //         } else {
+                
+
+    //                 values_json[k] = {};
+    //                 console.log(document.getElementById("multi_eval_name").value)
+    //                 if(document.getElementById("multi_eval_name").value == '')
+    //                 {
+    //                     alert("please input the name!")
+    //                 } else {
+    //                     values_json[k]['MultiEvaluation_Name'] = document.getElementById("multi_eval_name").value
+    //                     values_json[k]['MultiEvaluation_Description'] = document.getElementById("multi_eval_description").value
+
+    //                     // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+    //                     var parameter_values = JSON.stringify(values_json);
+    //                     $.ajax(
+    //                         {
+    //                             url: '/eval/create/multi',
+    //                             type: 'post',
+    //                             dataType: 'json',
+    //                             data: parameter_values,
+    //                             success: function(data){
+    //                                 if(data.result == 'success') {
+    //                                     alert("Save successfully!")
+    //                                 } else if(data.result == 'dataset error') {
+    //                                     alert("tasks running on different dataset!")
+    //                                 }
+    //                                 // btnfun();
+    //                             }
+    //                         }
+    //                     )
+    //                 // console.log(values_json)
+    //                 }
+
+
+    //         }
+    //     }
+
+
+
+    function createBatchOfEvo_list(){
+            // var selected = document.getElementsByClassName("selected");
+            ids = document.getElementById('eval1').value;
+            //处理字符串
+            // configuration_id_list = configuration_ids.split(",")
+            regex = /^\[\s*(\d+\s*(,\s*\d+\s*)*)?\]$/
+            if(!regex.test(ids)) {
+                alert("Please input legal str!")
+                return ;
+            }
+
+            ids_list = ids.substring(1, ids.length - 1).split(",")
+            for(var i=0; i < ids_list.length; i++) {
+                ids_list[i] = ids_list[i].trim()
+            }
+            console.log(ids_list)
+
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+
+            for(var i=0; i<ids_list.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+                console.log(i)
+                values_json[k] = {};
+                // console.log(document.getElementsByClassName("mappingTaskId")[i].innerHTML.split(':')[1])
+                values_json[k]['mappingTaskID'] = ids_list[i]
+                // Verify that the values_json[k]['value'] string satisfies the yaml format
+                k=k+1;   
+            }
+            if(k == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                var parameter_values = JSON.stringify(values_json);
+                console.log("hhh")
+                    // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                    $.ajax(
+                        {
+                            url: '/eval/create/batch',
+                            type: 'post',
+                            dataType: 'json',
+                            data: parameter_values,
+                            success: function(data){
+                                if(data.result == 'success') {
+                                    alert("create successfully!")
+                                    location.href = "/eval/index/single";
+                                } else if (data.result == 'exist') {
+                                    alert("Already exist!")
+                                } else if(data.result == 'version error') {
+                                    alert("Version error!")
+                                } else if(data.result == 'no task') {
+                                    alert(data.result)
+                                }
+                            }
+                        }
+                    )
+                // console.log(values_json)
+            }
+        }
+        function createMultiOfEvo_list(){
+            // var selected = document.getElementsByClassName("selected");
+            ids = document.getElementById('eval2').value;
+            //处理字符串
+            // configuration_id_list = configuration_ids.split(",")
+            regex = /^\[\s*(\d+\s*(,\s*\d+\s*)*)?\]$/
+            if(!regex.test(ids)) {
+                alert("Please input legal str!")
+                return ;
+            }
+
+            ids_list = ids.substring(1, ids.length - 1).split(",")
+            for(var i=0; i < ids_list.length; i++) {
+                ids_list[i] = ids_list[i].trim()
+            }
+            console.log(ids_list)
+
+            var values_json = {};
+            var k = 0;
+            // record selected parametr values
+            for(var i=0; i<ids_list.length; i++){
+                // alert("paramId="+paramID);//seleted_algo=id
+
+                values_json[k] = {};
+                // console.log(document.getElementsByClassName("mappingTaskId")[i].innerHTML.split(':')[1])
+                values_json[k]['mappingTaskID'] = ids_list[i]
+                // Verify that the values_json[k]['value'] string satisfies the yaml format
+                k=k+1;       
+            }
+            if(k == 0) {
+                // no selected
+                alert("Please select at least 1 config!")
+            } else {
+                
+
+                    values_json[k] = {};
+                    console.log(document.getElementById("multi_eval_name").value)
+                    if(document.getElementById("multi_eval_name").value == '')
+                    {
+                        alert("please input the name!")
+                    } else {
+                        values_json[k]['MultiEvaluation_Name'] = document.getElementById("multi_eval_name").value
+                        values_json[k]['MultiEvaluation_Description'] = document.getElementById("multi_eval_description").value
+
+                        // alert("submit form, parameter_values="+parameter_values);//seleted_algo=id
+                        var parameter_values = JSON.stringify(values_json);
+                        $.ajax(
+                            {
+                                url: '/eval/create/multi',
+                                type: 'post',
+                                dataType: 'json',
+                                data: parameter_values,
+                                success: function(data){
+                                    if(data.result == 'success') {
+                                        alert("Save successfully!")
+                                        location.href = "/eval/index/multi";
+                                    } else if(data.result == 'dataset error') {
+                                        alert("tasks running on different dataset!")
+                                    } else {
+                                        alert(data.result)
+                                    }
+                                    // btnfun();
+                                }
+                            }
+                        )
+                    // console.log(values_json)
+                    }
+
+
+            }
+        }
+
 </script>
 {% endblock %}
 

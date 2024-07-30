@@ -1,21 +1,30 @@
+More details see in <https://slam-hive.net/wiki>.
+
+Our Demo Website: <https://slam-hive.net>.
+
+# 1. Deploy in Workstation
+Workstation version. You can do some simple mappping running and evaluation.
 ## 1. Install Docker
 Install Docker and docker-compose: <https://www.docker.com>
 
-
-## 2. Build SLAM algorithm images
-We provide some SLAM algorithms Dockerfile and running scripts, here is an example to build an image:
+## 2. Create derectory
+``` shell
+$ cd /
+$ mkdir SLAM-Hive
+$ cd /SLAM-Hive
+$ git clone https://github.com/SLAM-Hive/slam_hive_results.git
+$ git clone slam_hive_controller # TO CHANGE
 ```
-mkdir -p SLAM_Hive/slam_hive_configurations
-cd SLAM_Hive
-git clone https://github.com/SLAM-Hive/slam_hive_web.git 
-git clone https://github.com/SLAM-Hive/slam_hive_datasets.git 
-git clone https://github.com/SLAM-Hive/slam_hive_results.git
-mkdir slam_hive_algos
-cd slam_hive_algos
-git clone https://github.com/SLAM-Hive/orb-slam2-ros-mono.git
-cd orb-slam2-ros-mono
-sudo chmod +x install.sh
-./install.sh
+
+## 3. Build SLAM algorithm images
+We provide some SLAM algorithms Dockerfile and running scripts, here is an example to build an image:
+``` shell
+$ cd /SLAM-Hive
+$ mkdir slam_hive_algos
+$ git clone https://github.com/SLAM-Hive/orb-slam2-ros-mono.git
+$ cd orb-slam2-ros-mono
+$ sudo chmod +x install.sh
+$ ./install.sh
 ```
 You can check whether the image is successfully built as follows:
 ```
@@ -42,20 +51,37 @@ slam-hive-algorithm    orb-slam3-ros-stereo             28c13955a331   9 days ag
 slam-hive-algorithm    orb-slam3-ros-stereo-inertial    28c13955a331   9 days ago      4.17GB
 slam-hive-algorithm    orb-slam3-ros-rgbd               28c13955a331   9 days ago      4.17GB
 slam-hive-algorithm    lio-sam                          99b1395a3b41   9 days ago      3.15GB
-slam-hive-algorithm    aloam                            34fbdj5a3b41   9 days ago      3.15GB
 ```
 If the image construction speed is very slow, it is recommended to find the Dockerfile in the corresponding folder and change the source list: `/etc/apt/sources.list`
 
-## 3. Download datasets
+**maybe upload the image.tar to a open repository.**
+
+## 4. Download datasets
 If there is not enough space on your computer, run the following command to download two datasets: `MH_01_easy.bag` (2.7G), `rgbd_dataset_freiburg2_desk.bag` (2.2 GB).
 ```
-$ cd SLAM_Hive/slam_hive_datatsets
+$ cd SLAM_Hive
+$ git clone https://github.com/SLAM-Hive/slam_hive_datasets.git
 $ python3 download.py
 ```
 We also provide download script for other datasets: `SLAM_Hive/slam_hive_datasets/download_all.py`. Please modify the script to download the dataset according to your needs.
 
-## 4. Build web
+## 5. Build web
 
+``` shell
+$ cd /SLAM-Hive
+$ git clone https://github.com/SLAM-Hive/slam_hive_web.git
+```
+
+Before build, you should change some configurations in some files.
+
+```
+$ cd /SLAM-Hive/slam_hive_web/SLAM_Hive/slamhive
+
+# __init__.py
+# set: app.config['CURRENT_VERSION'] = 'workstation'
+# settings.py
+# set HOST = 'mysql_ip' # version: workstation; view-only
+```
 ```
 $ cd SLAM_Hive/slam_hive_web
 $ sudo chmod -R 777 db/data
@@ -63,9 +89,11 @@ $ docker-compose up
 ```
 Then,open your browser and visit: <http://127.0.0.1:5000>
 
-## 5. Create tasks
+We default to mounting the path in the image to a local path, which facilitates secondary development of the code. You can also first build an image of slam hive web locally, and then use the local image directly at startup.
+
+## 6. Create tasks
 Ensure you have installed correspoding images and downloaded the dataset before creating tasks.
-### 5.1 Create mapping tasks
+### 6.1 Create mapping tasks
 Take orb-slam2-ros-mono and MH_01_easy as an example: (please make sure the above steps are successful)
 
 Step1: Click the "Copy" button of the first config in the MappingTaskConfig list. 
@@ -77,12 +105,12 @@ Step3: Change some parameter values according to the actual situation, then clic
 You can also create a mapping task from scratch by clicking "Create Config". 
 
 <!-- Click "Create Config" button on MappingTaskConfig page, select the algorithm and dataset you have installed and downloaded.  -->
-### 5.2 Create evaluation tasks
+### 6.2 Create evaluation tasks
 When the mapping task is completed, the "Evaluate" button will appear in the MappingTask list. Click it to start the evaluation. After the evaluation is completed, the status of the Evaluation list will become "Finished". Click "Show" to see the evaluation results.
 
-### 5.3 Extending Algorithms, Datasets, parameters
+### 6.3 Extending Algorithms, Datasets, parameters
 We provide some algorithms, datasets, and parameters supported by SLAM Hive on the web. For new additions, refer to the following tutorials.
-### 5.3.1 Create your own algorithm
+### 6.3.1 Create your own algorithm
 Step1: Write execution scripts
 
 Algorithm execution scripts include three file. You can create them refer to scripts in `/SLAM_Hive/slam_hive_algos/<>/slamhive/`. The functions of each script are as described below.
@@ -97,7 +125,7 @@ Algorithm execution scripts include three file. You can create them refer to scr
 Step2: Add algorithm to web
 
 Click the "New" button on the Algorithm page, input the algorithm name, the name must be the same as the tag name of the image. Input your algorithm scripts url and description.
-### 5.3.2 Create new dataset
+### 6.3.2 Create new dataset
 Step1: Provide your dataset and a script
 
 | File      | Description |
@@ -110,7 +138,7 @@ Step1: Provide your dataset and a script
 Step2: Add dataset to web
 
 Input dataset folder name, which must be the same as the name of dataset folder. Input dataset download url and description.
-### 5.3.3 Create parameters
+### 6.3.3 Create parameters
 1.Format type declaration
 
 (Don't omit space in between)
@@ -126,7 +154,234 @@ Input dataset folder name, which must be the same as the name of dataset folder.
 
 Fristly, add parameters on Parameter page, click "New", input parameter name, select the type according to the table above and fill in the description. Then, when you create MappingTaskConfig, choose the parameter you added in the previous step and input the value according to the format corresponding to the type.
 
-## 6. Licence
+## 7. Create Custom Analysis Task
+When you have created some mapping and evaluation tasks, you can select some of them to make custom analysis task.
+
+
+
+# 2. Deploy in Cluster
+## 1. Install Docker
+Install Docker and docker-compose: <https://www.docker.com>
+## 2. Install and deploy the Kubernetes
+If you have deployed Kubernetes in your cluster, can skip 2.1
+We select kubernetes v1.21.3
+### 2.1 configure both in master node and work nodes
+``` shell
+# 1. close firewall
+$ sudo apt install -y ufw
+$ sudo ufw disable
+
+# 2. close selinux
+$ sudo apt install -y selinux-utils
+$ setenforce 0
+
+# 3. disable swap partitions
+$ swapoff -a
+$ sudo vim /etc/fstab # then comment out the "swap" line.
+
+# 4. login root
+$ su root
+
+# 5. configure iptables
+$ cat > /etc/sysctl.d/k8s.conf <<EOF
+$ net.bridge.bridge-nf-call-ip6tables = 1
+$ net.bridge.bridge-nf-call-iptables = 1
+$ EOF
+$ sysctl --system
+
+# 6. configure Kubernetes resource
+$ curl -s https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add -
+$ echo "deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+$ apt-get update
+
+# 7. install nfs
+$ apt-get install nfs-common
+
+# 8. install Kubernetes components
+$ apt install -y kubelet=1.21.3-00 kubeadm=1.21.3-00 kubectl=1.21.3-00
+
+# 9. start kubelet and set kubelet to boot
+$ systemctl enable kubelet
+$ systemctl start kubelet
+```
+### 2.2 configure in master node (build Kubernetes cluster)
+create a shell script and write follow content into it, and then execute it.
+``` shell
+#!/bin/bash
+images=(
+ kube-apiserver:v1.21.3
+ kube-controller-manager:v1.21.3
+ kube-scheduler:v1.21.3
+ kube-proxy:v1.21.3
+ pause:3.2
+ etcd:3.4.13-0
+)
+for imageName in ${images[@]} ; do
+  docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/${imageName}
+  docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/${imageName} k8s.gcr.io/${imageName}
+  docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/${imageName}
+done
+docker pull coredns/coredns:1.8.0
+docker tag coredns/coredns:1.8.0 registry.aliyuncs.com/google_containers/coredns:v1.8.0
+docker rmi coredns/coredns:1.8.0
+```
+``` shell
+# 1. Initialize master
+$ kubeadm init --image-repository=registry.aliyuncs.com/google_containers  --pod-network-cidr=10.244.0.0/16	 --service-cidr=10.96.0.0/12 # remember the output
+$ kubeadm token create --ttl 0 --print-join-command # If forget last command
+
+# 2. configure kubectl
+$ mkdir -p $HOME/.kube
+$ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+$ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# 3. network plug-in flannel
+$ sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+# If download slowly, you can create a kube-flannel.yml locally and copy the content to the yml file, and then execute: `sudo kubectl apply -f kube-flannel.yml`
+
+# 4. other steps
+# For the file: `/etc/kubernetes/manifests/kube-controller-manager.yaml` and `/etc/kubernetes/manifests/kube-scheduler.yaml`, comment out the line that contains "– port=0"
+# Then:
+$ syatemctl restart kubelet.service
+```
+### 2.3 configure in work node (join work nodes into the master's cluster)
+input the command getting at 2.2.1.
+
+If you want to use `kubectl` in work nodes: copy the /etc/kubernetes/admin.conf from master node to the same directory of the work nodes.
+
+
+## 3. Create Root Directory
+same as `Workstation` version.
+
+## 4. Build SLAM algorithm images
+same as `Workstation` version.
+
+## 5. Download datasets
+same as `Workstation` version.
+
+## 6. Build Web
+
+### 6.1 slam_hive_controller configure
+You need to fill the basic information in the configuration file.
+``` shell
+$ cd /SLAM-Hive/slam_hive_controller/Module_B/project/init_config.py
+# fill information based on your cluster.
+```
+And then build the cluster controller docker image:
+```
+cd /SLAM-Hive/slam_hive_controller/Module_B
+docker build -t module_b:[xxx]
+```
+
+### 6.2 pull the slam_hive_web
+``` shell
+$ cd /SLAM-Hive
+$ git clone https://github.com/SLAM-Hive/slam_hive_web.git
+```
+And you should input the module_b name in file: /SLAM-Hive/slam_hive_web/SLAM_Hive/slamhive/__init__.py
+``` shell
+# app.config['CLUSTER_CONTROLLER_IMAGE_NAME'] = "[xxx]"
+```
+
+### 6.3 cadvisor configure
+You need to run a monitor tool: cadvisor in every work nodes.
+``` shell
+$ cd /SLAM-Hive/slam_hive_web/
+$ vim cadvisor_pod.yaml
+# change the spec.nodeName to your work node's name.
+$ kubectl apply -f cadvisor_pod.yaml
+```
+
+### 6.4 slam_hive_web configure
+``` shell
+$ cd /SLAM-Hive/slam_hive_web/
+$ vim slam_hive_pod.yaml
+# change the spec.nodeName to your master node's name.
+
+$ cd /SLAM-Hive/slam_hive_web/SLAM_Hive/slamhive
+$ vim setting.py
+# set: HOST = 'localhost'
+
+$ vim __init__.py
+# set: app.config['CURRENT_VERSION'] = 'cluster'
+```
+
+### 6.5 build slam-hive-web:xxx docker image
+``` shell
+$ cd /SLAM-Hive/slam_hive_web
+$ docker build -t slam-hive-web:tag_name .
+# You can specify the tag_name
+$ vim slam_hive_pod.yaml
+# set spec.containers[slam-hive-web-kube].image = slam-hive-web:tag_name
+```
+
+### 6.5 start slam_hive_web
+``` shell
+$ cd SLAM_Hive/slam_hive_web
+$ sudo chmod -R 777 db/data
+$ sudo kubectl apply -f slam_hive_pod.yaml
+```
+
+### 6.6 View Website
+``` shell
+$ sudo kubectl get all -o wide # get the IP of the web
+```
+Then,open your browser and visit: <http://IP:5000>
+
+
+
+# 3. Deploy in Aliyun
+
+## 1. Configure the Aliyun
+Firstly, you should have a Aliyun account and get your ALIBABA_CLOUD_ACCESS_KEY_ID and ALIBABA_CLOUD_ACCESS_KEY_SECRET.
+
+## 2. Configure master node
+You should have a Aliyun instance as the master node.
+To configure the master node, you can see `2. Deploy in Cluster`
+
+## 3. Build web
+We assume that you have finished configuring the environment and creating the directory.
+
+In Master node:
+``` shell
+$ cd /SLAM-Hive/slam_hive_web
+$ vim slam_hive_pod.yaml
+# change the spec.nodeName to your master node's name.
+
+$ cd /SLAM-Hive/slam_hive_web/SLAM_Hive/slamhive
+$ vim setting.py
+# set: HOST = 'localhost'
+
+$ vim __init__.py
+# set: app.config['CURRENT_VERSION'] = 'aliyun'
+# set: app.config['MASTER_REGION'] = `Region where your master node are at`
+# set: app.config['MASTER_IP'] = `Master node pubic network IP`
+# set: app.config['work_node_image_id'] = "work node initialize image"
+# TODO 需要设置一下共享镜像
+# set: app.config['MASTER_INNER_IP'] = "Master node inner IP"
+
+$ kubeadm token create --ttl 0 --print-join-command
+# set: app.config["kubernetes_join_command"] = `join command`
+```
+``` shell
+$ cd SLAM_Hive/slam_hive_web
+$ sudo chmod -R 777 db/data
+$ sudo kubectl apply -f slam_hive_pod.yaml
+```
+Then enter the slam_hive_web container to set the ALIBABA environment variable.
+``` shell
+$ cat ALIBABA_CLOUD_ACCESS_KEY_ID > ~/.bashrc
+$ cat ALIBABA_CLOUD_ACCESS_KEY_SECRET > ~/.bashrc
+$ source ~/.bashrc
+```
+
+Then,open your browser and visit: <http://IP:5000>
+
+## 4. how to create task
+Same as workstation version, except you should input the aliyun server configuration.
+
+
+## 7. Licence
 The source code is released under [GPLv3](http://www.gnu.org/licenses/) license.
 
 We are still working on improving the code reliability. For any technical issues, you can make an issue.

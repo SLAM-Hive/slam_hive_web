@@ -1,0 +1,155 @@
+configuration_choose:
+  comb_configuration_id:
+  - 77
+  - 78
+  - 79
+  - 81
+  - 73
+  - 84
+  - 85
+  - 86
+  - 87
+  - 88
+  - 89
+  - 90
+  - 91
+  - 93
+  - 94
+  - 96
+  - 97
+  - 98
+  - 99
+  - 100
+  - 101
+  - 108
+  - 103
+  - 104
+  - 105
+  - 6
+  - 113
+  - 109
+  - 111
+  - 112
+  combination_rule:
+    first_one:
+    - 1
+    first_rule:
+    - U
+    second_one:
+    - 0
+    - 2
+    second_rule:
+    - I
+  configuration_id: []
+  limitation_rules:
+    algorithm_id: null
+    dataset_id: null
+    evaluation_value:
+      ate_max_maximun: null
+      ate_max_minimum: null
+      ate_max_nolimitation: 1
+      ate_mean_maximun: null
+      ate_mean_minimum: null
+      ate_mean_nolimitation: 1
+      ate_median_maximun: null
+      ate_median_minimum: null
+      ate_median_nolimitation: 1
+      ate_min_maximun: null
+      ate_min_minimum: null
+      ate_min_nolimitation: 1
+      ate_rmse_maximun: null
+      ate_rmse_minimum: null
+      ate_rmse_nolimitation: 1
+      ate_sse_maximun: null
+      ate_sse_minimum: null
+      ate_sse_nolimitation: 1
+      ate_std_maximun: null
+      ate_std_minimum: null
+      ate_std_nolimitation: 1
+      cpu_max_maximun: null
+      cpu_max_minimum: null
+      cpu_max_nolimitation: 1
+      cpu_mean_maximun: null
+      cpu_mean_minimum: null
+      cpu_mean_nolimitation: 1
+      ram_max_maximun: null
+      ram_max_minimum: null
+      ram_max_nolimitation: 1
+      rpe_max_maximun: null
+      rpe_max_minimum: null
+      rpe_max_nolimitation: 1
+      rpe_mean_maximun: null
+      rpe_mean_minimum: null
+      rpe_mean_nolimitation: 1
+      rpe_median_maximun: null
+      rpe_median_minimum: null
+      rpe_median_nolimitation: 1
+      rpe_min_maximun: null
+      rpe_min_minimum: null
+      rpe_min_nolimitation: 1
+      rpe_rmse_maximun: null
+      rpe_rmse_minimum: null
+      rpe_rmse_nolimitation: 1
+      rpe_sse_maximun: null
+      rpe_sse_minimum: null
+      rpe_sse_nolimitation: 1
+      rpe_std_maximun: null
+      rpe_std_minimum: null
+      rpe_std_nolimitation: 1
+    parameters_value:
+    - nFeatures < 4000
+evaluation_form:
+  1_trajectory_comparison:
+    choose: 0
+  2_accuracy_metrics_comparison:
+    choose: 0
+  3_accuracy_metrics_comparison:
+    algorithm_id:
+    - 12
+    calculate_method: 1
+    choose: 0
+    dataset_id:
+    - 2
+    metric: ate_rmse
+  4_usage_metrics_comparison:
+    choose: 0
+  5_scatter_diagram:
+    choose: 0
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram:
+    choose: 1
+    x-axis: cpu_mean
+    y-axis: ate_mean
+    extend_choose: 1
+    extend_multiple:
+    - 1
+    - 2
+    - 5
+    - 10
+    extend_threshold:
+    - 0.75
+    - 0.5
+    - 0.25    
+
+  7_3d_scatter_diagram:
+    choose: 1
+    x-axis: general+image_width
+    y-axis: cpu_mean
+    z-axis: ate_mean
+    extend_choose: 1
+    extend_multiple:
+    - 1
+    - 2
+    - 5
+    - 10
+    extend_threshold:
+    - 0.75
+    - 0.5
+    - 0.25
+  8_repeatability_test:
+    choose: 0
+    metric: null
+  algorithm_dataset_type: 3
+group_description: orb-slam3(4 mode) on Euroc dataset(5 sequences); \n 350 configurations
+group_name: Paper_ORB-SLAM3_Parameter_Exploration_Experiment

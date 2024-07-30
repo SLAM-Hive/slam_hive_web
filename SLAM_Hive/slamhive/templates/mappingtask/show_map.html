@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+    <br>
+    <h4 style="text-align: center;  height:25;">
+      {{ mappingtask.mappingTaskConf.algorithm.imageTag }} <small>with</small> {{ mappingtask.mappingTaskConf.dataset.name }}
+  </h4>
+  <div><h5>Current mappingtask configuration id: <b style="color: #000;">{{mappingtask.mappingTaskConf.id}}</b></h5></div>
+  <div><h5>Current mappingtask id: <b style="color: #000;">{{mappingtask.id}}</b></h5></div>
+  <div style="text-align:left;">
+      <a class="button" href="{{ url_for('download_mappingtask_single', id = mappingtask.id) }}" download="resource.zip" >
+          <input class="btn btn-primary" type="submit" value="Download mapping task results" style="background-color:rgb(74, 153, 226)" >
+      </a>
+  </div>
+  <br>
+
+
+    <h5>Click "Return" button to see more details of this task.</h5>
+
+    <div style="text-align:left;">
+        <a class="button" href="{{ url_for('show_mappingtask', id=mappingtask.id) }}" >
+            <input class="btn btn-primary" type="submit" value="Return" >
+        </a>
+    </div>
+
+
+    <br>
+
+      <div>
+        <script type="importmap">
+            {
+              "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+              }
+            }
+          </script>
+          <script type="text/javascript"> current_map_path ="{{map_path}}";</script>
+          <script type="module" src="../../static/js/map.js"></script>
+
+          <div id="map_show" class="row">
+              
+          </div>
+      </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+</script>
+{% endblock %}

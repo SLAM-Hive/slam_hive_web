@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2022 Yuanyuan Yang, Bowen Xu, Yinjie Li, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,10 +37,16 @@ DIALECT = 'mysql'
 DRIVER = 'pymysql'
 USERNAME = 'root'
 PASSWORD = 'SLAMHive1#'
-# HOST = 'localhost'
-HOST = '172.40.0.3'
+################################################################
+## workstation and view-only version, use: HOST = 'mysql_ip'  ##
+## cluster and aliyun version, use: HOST = 'localhost'        ##
+################################################################
+# HOST = 'localhost' # version: cluster; aliyun  (using kubernetes pod to start)
+HOST = 'mysql_ip' # version: workstation; view-only (using docker-compose to start)
 PORT = '3306'
-DATABASE = 'slamhiveDB'
+
+# new database version
+DATABASE = 'slamhiveDB3'
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'secret string')
 SQLALCHEMY_TRACK_MODIFICATIONS = False

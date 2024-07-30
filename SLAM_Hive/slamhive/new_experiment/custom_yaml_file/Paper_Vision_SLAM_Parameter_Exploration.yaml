@@ -1,0 +1,191 @@
+Explanation:
+
+This custom analysis task is to explore how the resolution and framerate of Image data affect the accuracy of Vision SLAM algorithms, and how to balance algorithm accuracy, resource consumption, and image data quality (resolution and framerate).
+
+4 V-SLAM algorithms with different modes (totally 10 combination).
+5 Image frame rate: 20Hz, 10Hz, 5Hz, 2Hz, 1Hz
+6 Image Resolution: 1, 0.8, 0.6, 0.5, 0.4, 0.2
+5 sequences of EuRoC Dataset
+Totally:1500 configurations
+
+This task can generate static 2D and 3D scatter. And in the web page, you can see the static scatter, create the scatter using different metrics and parameters, download the raw data of these charts, and also see the dynamic scatter online.
+
+---
+
+YAML File:
+
+configuration_choose:
+  comb_configuration_id: # all the comb_configuration ID. Totally 50 groups.
+  - 147
+  - 148
+  - 149
+  - 150
+  - 151
+  - 141
+  - 142
+  - 143
+  - 144
+  - 145
+  - 133
+  - 134
+  - 135
+  - 136
+  - 137
+  - 128
+  - 129
+  - 130
+  - 131
+  - 132
+  - 123
+  - 124
+  - 125
+  - 126
+  - 127
+  - 118
+  - 119
+  - 120
+  - 121
+  - 122
+  - 152
+  - 153
+  - 154
+  - 155
+  - 156
+  - 163
+  - 164
+  - 165
+  - 166
+  - 167
+  - 169
+  - 170
+  - 171
+  - 172
+  - 173
+  - 173
+  - 174
+  - 175
+  - 176
+  - 177
+  - 178
+  combination_rule: # config id - 0; comb config id - 1; limitation rules - 2;
+    first_one: # (1) [-] (0 [Intersection] 2) (Actually Using all configs in 1)
+    - 1
+    first_rule:
+    - U
+    second_one:
+    - 0
+    - 2
+    second_rule:
+    - I
+  configuration_id: []
+  limitation_rules:
+    algorithm_id: null
+    dataset_id: null
+    evaluation_value:
+      ate_max_maximun: null
+      ate_max_minimum: null
+      ate_max_nolimitation: 1
+      ate_mean_maximun: null
+      ate_mean_minimum: null
+      ate_mean_nolimitation: 1
+      ate_median_maximun: null
+      ate_median_minimum: null
+      ate_median_nolimitation: 1
+      ate_min_maximun: null
+      ate_min_minimum: null
+      ate_min_nolimitation: 1
+      ate_rmse_maximun: null
+      ate_rmse_minimum: null
+      ate_rmse_nolimitation: 1
+      ate_sse_maximun: null
+      ate_sse_minimum: null
+      ate_sse_nolimitation: 1
+      ate_std_maximun: null
+      ate_std_minimum: null
+      ate_std_nolimitation: 1
+      cpu_max_maximun: null
+      cpu_max_minimum: null
+      cpu_max_nolimitation: 1
+      cpu_mean_maximun: null
+      cpu_mean_minimum: null
+      cpu_mean_nolimitation: 1
+      ram_max_maximun: null
+      ram_max_minimum: null
+      ram_max_nolimitation: 1
+      rpe_max_maximun: null
+      rpe_max_minimum: null
+      rpe_max_nolimitation: 1
+      rpe_mean_maximun: null
+      rpe_mean_minimum: null
+      rpe_mean_nolimitation: 1
+      rpe_median_maximun: null
+      rpe_median_minimum: null
+      rpe_median_nolimitation: 1
+      rpe_min_maximun: null
+      rpe_min_minimum: null
+      rpe_min_nolimitation: 1
+      rpe_rmse_maximun: null
+      rpe_rmse_minimum: null
+      rpe_rmse_nolimitation: 1
+      rpe_sse_maximun: null
+      rpe_sse_minimum: null
+      rpe_sse_nolimitation: 1
+      rpe_std_maximun: null
+      rpe_std_minimum: null
+      rpe_std_nolimitation: 1
+    parameters_value:
+evaluation_form:
+  1_trajectory_comparison:
+    choose: 0
+  2_accuracy_metrics_comparison:
+    choose: 0
+  3_accuracy_metrics_comparison:
+    algorithm_id:
+    - 12
+    calculate_method: 1
+    choose: 0
+    dataset_id:
+    - 2
+    metric: ate_rmse
+  4_usage_metrics_comparison:
+    choose: 0
+  5_scatter_diagram:
+    choose: 0
+    x-axis: ate_mean
+    y-axis: cpu_mean
+  6_scatter_diagram: # choose this
+    choose: 1
+    extend_choose: 1 # choose Extend-Evo metrics
+    extend_multiple: # the multiple by which the different inervals increase the origin value
+    - 1
+    - 2
+    - 5
+    - 10
+    extend_threshold: # set the inervals - [1, 0.75) [0.75, 0.5) [0.5, 0.25) [0.25, 0]
+    - 0.75
+    - 0.5
+    - 0.25
+    x-axis: cpu_mean # x axis 
+    y-axis: ate_mean # y axis
+  7_3d_scatter_diagram: # choose this
+    choose: 1         
+    extend_choose: 1    # same as 6_scatter_diagram
+    extend_multiple:
+    - 1
+    - 2
+    - 5
+    - 10
+    extend_threshold:
+    - 0.75
+    - 0.5
+    - 0.25
+    x-axis: general+image_width
+    y-axis: general+image_frequency
+    z-axis: ate_mean
+  8_repeatability_test:
+    choose: 0
+    metric: null
+  algorithm_dataset_type: 3
+group_description: 10 modes of 4 vision algorithm on 5 sequences; 5 image rate and
+  6 image resolution - totally 1500 configurations
+group_name: Paper_Vision_SLAM_Image_Exploration_Experiment

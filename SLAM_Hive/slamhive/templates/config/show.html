@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}MappingTaskConfig{% endblock %}
+{% block content %}
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/configuration" class="floating-button"  target="_blank">Wiki Link</a>
+
+    <br>
+    <h5 style="text-align: center"><b>Mapping Task Configuration {{config.id}} Details Information </b></h5>
+
+    <br>
+    {% for task in config.mappingTasks %}
+        <b>mapping task ID: {{task.id}} </b> |                     
+        <div class="btn-group" role="group">
+            <a class="button" href="{{ url_for('show_mappingtask', id=task.id) }}">
+                <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
+            </a>
+            &nbsp;&nbsp;
+        </div>
+    {%endfor%}
+
+    <hr>
+    <br>
+    <h4>Algorihtm & Dataset</h4> 
+    <div class="card mb-3">
+        <h5>Algorithm Selection</h5><br>
+        <p><b>Algorithm ImageTag: </b> {{config.algorithm.imageTag}} <br>
+        <b>Algorihtm name: </b> {{config.algorithm.className}}
+        <h5>Dataset Selection:</h5><br>
+        <p><b>Dataset Sequence Name: </b> {{config.dataset.name}}<br>
+        <b>Dataset name: </b> {{config.dataset.className}}
+    </div>
+
+
+    <br>
+    <h4>Configuration Information </h4>
+    <div class="form-group">
+        <p><b>Mapping Task Configuration Name: </b>{{config.name}} <br>
+        <b>Mapping Task Configuration Description: </b> <pre>{{config.description}}</pre> 
+    </div> 
+
+    <br>
+
+    <br>
+    <h4>Corresponding Parameters Infomation</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th >Description</th>
+                <th>parameter Type</th>
+                <th>Algo/Dataset Name</th>
+                <th>Key</th>
+                <th>Value Type</th>
+                <th>Value </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set list_ = [] %}
+            {% for paramValue in config.paramValues %}
+                <tr>
+                    <td class="paramId">{{ paramValue.algoParam.id }}</td>
+                    <td  style="max-width: 200px; word-wrap: break-word;">{{ paramValue.algoParam.name }}</td>
+                    <td  style="max-width: 600px; word-wrap: break-word;"><pre>{{paramValue.algoParam.description}}</pre></td>
+                    <td>{{paramValue.algoParam.paramType}}   </td>
+                    <td>{{paramValue.className}}   </td>
+                    <td>{{paramValue.keyName}}   </td>
+                    <td>{{paramValue.valueType}} </td>
+                    <td >{{paramValue.value}}</td>
+                </tr>
+            {% endfor %} 
+        </tbody>
+    </table>  
+    <a class="button" href="{{ url_for('index_config') }}">
+        <input class="btn btn-primary" type="submit" value="Return" >
+    </a> 
+{% endblock %}

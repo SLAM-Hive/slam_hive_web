@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Evaluate{% endblock %}
+
+{% block content %}
+
+<style>
+    .floating-button {
+        position: fixed;
+        top: 120px;
+        right: 30px;
+        background-color: #5195e2;
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    
+    .floating-button:hover {
+        background-color: #0055af;
+    }
+</style>
+<a href="https://slam-hive.net/wiki/mappingtask:detail" class="floating-button"  target="_blank">Wiki Link</a>
+    <br>
+
+    <div>
+        <h4 style="text-align: center;  height:25;">
+            {{ config_dict["slam-hive-algorithm"] }} <small>with</small> {{ config_dict["slam-hive-dataset"] }}
+        </h4>
+        <div><h5>Current configuration id: <b style="color: #000;">{{config.id}}</b></h5>
+            <div class="btn-group" role="group">
+                <a class="button" href="{{ url_for('show_config', id=config.id) }}">
+                    <input class='btn btn-default btn-sm' type="submit" value="Show Detials" >
+                </a>
+                &nbsp;&nbsp;
+            </div>
+        </div>
+        <div><h5>Current mappingtask id: <b style="color: #000;">{{mappingtask.id}}</b></h5></div>
+        <div><h5>evaluation task id: <b style="color: #000;">{{mappingtask.evaluation.id}}</b></h5>
+            <div class="btn-group" role="group">
+                <a class="button" href="{{ url_for('show_evaluate', id=mappingtask.evaluation.id) }}">
+                    <input class='btn btn-default btn-sm' type="submit" value="Show">
+                </a> 
+                &nbsp;&nbsp;
+            </div>
+        </div>
+        <br>
+        <br>
+        
+
+
+        <div style="text-align:left;">
+            <a class="button" href="{{ url_for('download_mappingtask_single', id = mappingtask.id) }}" download="resource.zip" >
+                <input class="btn btn-primary" type="submit" value="Download mapping task results" style="background-color:rgb(74, 153, 226)" >
+            </a>
+        </div>
+        <br>
+        <table class="table table-bordered">
+            <caption>Algorithm parameters</caption>
+            <thead>
+              <tr>
+                <th>Parameter type</th>
+                <th>Parameter name</th>
+                <th >Parameter value</th>
+              </tr>
+            </thead>
+            <tbody>
+                {% for key1, value1 in config_dict.items() %}
+                    {% if value1 != None and key1 != "slam-hive-algorithm" and key1 != "slam-hive-dataset" %}
+                        {% for key, value in value1.items() %}
+                        <tr>
+                            <td>{{ key1 }}</td>
+                            <td>{{ key }}</td>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endfor %} 
+                    {% endif %}
+                {% endfor %} 
+
+            </tbody>
+        </table> 
+        
+    
+        <table class="table table-bordered">
+            <caption>Computing resource usage</caption>
+            <thead>
+              <tr>
+                <th>Max CPU (core)</th>
+                <th >Mean CPU (core)</th>
+                <th >Max Memory (MB)</th>
+              </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ usage_info["max_cpu"] }}</td>
+                    <td>{{ usage_info["mean_cpu"] }}</td>
+                    <td>{{ usage_info["max_ram"] }}</td>  
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="row">
+        {% for mapping_usage_img_path in mapping_usage_img_list %}
+            <div class="col-md-6">
+                <img src="{{ url_for('get_img', imgpath=mapping_usage_img_path) }}" width="90%" height="90%"/>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if map_flag %}
+        <div style="text-align:left;">
+            <a class="button" href="{{ url_for('show_mappingtask_map', id=mappingtask.id) }}" >
+                <input class="btn btn-primary" type="submit" value="Show Pointcloud Map" >
+            </a>
+        </div>
+    {% else %}
+        <h5>No map results!</h5>
+    {% endif %}
+<br>
+    {% if grid_flag == False %}
+
+        <h5> No grid map! </h5>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: slam-hive-cadvisor-work-node
+  # namespace: slam-hive
+spec:
+  # nodeName: master-node # your master server hostname (need to change based on the kubernetes actual hostname)
+  nodeName: xinzhe # CHANGE THIS
+  containers:
+    - name: cadvisor-kube-work-node
+      image: google/cadvisor:latest
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - name: cadvisor-1
+          mountPath: /rootfs
+          readOnly: true
+        - name: cadvisor-2
+          mountPath: /var/run
+          #readOnly: true
+        - name: cadvisor-3
+          mountPath: /sys
+          readOnly: true
+        - name: cadvisor-4
+          mountPath: /var/lib/docker
+          readOnly: true
+        - name: cadvisor-5
+          mountPath: /dev/disk
+          readOnly: true
+      securityContext:
+        privileged: true
+      # volumeDevices:
+        # - name: cadvisor-device
+          # devicePath: /dev/kmsg
+      ports:
+        - name: cadvisor-port
+          containerPort: 8080
+          hostPort: 8085      
+  restartPolicy: Always
+  volumes:
+    - name: cadvisor-1
+      hostPath:
+        path: /
+    - name: cadvisor-2
+      hostPath:
+        path: /var/run
+    - name: cadvisor-3
+      hostPath:
+        path: /sys
+    - name: cadvisor-4
+      hostPath:
+        path: /var/lib/docker
+    - name: cadvisor-5
+      hostPath:
+        path: /dev/disk
+    # - name: cadvisor-device
+      # persistentVolumeClaim:
+        # claimName: /dev/kmsg
+
+
+
+
