@@ -951,7 +951,7 @@ def show_diagram1_extend():
                         x_v = performanceresults.max_cpu
                     elif x_axis == 'CPU-mean':
                         x_v = performanceresults.mean_cpu
-                    elif x_axis == 'Momery_max':
+                    elif x_axis == 'Memory-max':
                         x_v = performanceresults.max_ram
                     else:
                         # parameter
@@ -1559,7 +1559,7 @@ def create_diagram1():
                         x_v = performanceresults.max_cpu
                     elif x_axis == 'CPU-mean':
                         x_v = performanceresults.mean_cpu
-                    elif x_axis == 'Momery_max':
+                    elif x_axis == 'Memory-max':
                         x_v = performanceresults.max_ram
                     else:
                         # parameter
