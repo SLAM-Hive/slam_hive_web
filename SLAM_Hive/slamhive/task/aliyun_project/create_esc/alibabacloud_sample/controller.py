@@ -98,7 +98,7 @@ class Aliyun_controller:
         task_signal, # batch task 的编号：batchxxx
 
         batch_task_id, # /SLAM-Hive/slam-hive-results/batch_mappingtask/batch_task_id
-        work_node_image_id,
+        WORK_NODE_IMAGE_ID,
         final_node_template, final_config_node, final_task_node, template_algo_dict, template_dataset_dict, template_number, node_number, aliyun_configuration
     ):
         #### 1. 准备好流程所需要的全部参数
@@ -572,7 +572,7 @@ class Aliyun_controller:
                     ssh = paramiko.SSHClient()
                     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                     ssh.connect(hostname=inner_IP_list[i], port=10000, username='root', password='slam-hive1')
-                    kubeadm_join_command = app.config['kubernetes_join_command']
+                    kubeadm_join_command = app.config['KUBERNETES_JOIN_COMMAND']
                     # print(kubeadm_join_command)
                     # 加入集群
                     ssh.exec_command(kubeadm_join_command)

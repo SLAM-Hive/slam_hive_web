@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Xinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,8 +41,8 @@ PASSWORD = 'SLAMHive1#'
 ## workstation and view-only version, use: HOST = 'mysql_ip'  ##
 ## cluster and aliyun version, use: HOST = 'localhost'        ##
 ################################################################
-# HOST = 'localhost' # version: cluster; aliyun  (using kubernetes pod to start)
-HOST = 'mysql_ip' # version: workstation; view-only (using docker-compose to start)
+HOST = 'localhost' # version: cluster; aliyun  (using kubernetes pod to start)
+#HOST = 'mysql_ip' # version: workstation; view-only (using docker-compose to start)
 PORT = '3306'
 
 # new database version

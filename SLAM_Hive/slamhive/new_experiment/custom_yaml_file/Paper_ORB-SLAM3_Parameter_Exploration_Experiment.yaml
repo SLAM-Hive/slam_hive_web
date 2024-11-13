@@ -45,55 +45,55 @@ configuration_choose:
     algorithm_id: null
     dataset_id: null
     evaluation_value:
-      ate_max_maximun: null
+      ate_max_maximum: null
       ate_max_minimum: null
       ate_max_nolimitation: 1
-      ate_mean_maximun: null
+      ate_mean_maximum: null
       ate_mean_minimum: null
       ate_mean_nolimitation: 1
-      ate_median_maximun: null
+      ate_median_maximum: null
       ate_median_minimum: null
       ate_median_nolimitation: 1
-      ate_min_maximun: null
+      ate_min_maximum: null
       ate_min_minimum: null
       ate_min_nolimitation: 1
-      ate_rmse_maximun: null
+      ate_rmse_maximum: null
       ate_rmse_minimum: null
       ate_rmse_nolimitation: 1
-      ate_sse_maximun: null
+      ate_sse_maximum: null
       ate_sse_minimum: null
       ate_sse_nolimitation: 1
-      ate_std_maximun: null
+      ate_std_maximum: null
       ate_std_minimum: null
       ate_std_nolimitation: 1
-      cpu_max_maximun: null
+      cpu_max_maximum: null
       cpu_max_minimum: null
       cpu_max_nolimitation: 1
-      cpu_mean_maximun: null
+      cpu_mean_maximum: null
       cpu_mean_minimum: null
       cpu_mean_nolimitation: 1
-      ram_max_maximun: null
+      ram_max_maximum: null
       ram_max_minimum: null
       ram_max_nolimitation: 1
-      rpe_max_maximun: null
+      rpe_max_maximum: null
       rpe_max_minimum: null
       rpe_max_nolimitation: 1
-      rpe_mean_maximun: null
+      rpe_mean_maximum: null
       rpe_mean_minimum: null
       rpe_mean_nolimitation: 1
-      rpe_median_maximun: null
+      rpe_median_maximum: null
       rpe_median_minimum: null
       rpe_median_nolimitation: 1
-      rpe_min_maximun: null
+      rpe_min_maximum: null
       rpe_min_minimum: null
       rpe_min_nolimitation: 1
-      rpe_rmse_maximun: null
+      rpe_rmse_maximum: null
       rpe_rmse_minimum: null
       rpe_rmse_nolimitation: 1
-      rpe_sse_maximun: null
+      rpe_sse_maximum: null
       rpe_sse_minimum: null
       rpe_sse_nolimitation: 1
-      rpe_std_maximun: null
+      rpe_std_maximum: null
       rpe_std_minimum: null
       rpe_std_nolimitation: 1
     parameters_value:

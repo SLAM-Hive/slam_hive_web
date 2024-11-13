@@ -1,5 +1,5 @@
 
-from flask import flash, redirect, url_for, render_template, request, jsonify, send_from_directory, render_template_string
+from flask import flash, redirect, url_for, render_template, request, jsonify, send_from_directory, render_template_string, abort
 from slamhive import app, db
 from slamhive.models import Algorithm, MappingTaskConfig, ParameterValue, AlgoParameter, Dataset, CombMappingTaskConfig, GroupMappingTaskConfig
 from slamhive.forms import DeleteCustomAnalysisGroup, DeleteMappingTaskConfigForm, DeleteGroupMappingTaskConfigForm,DeleteGroupMappingTaskConfigForm1
@@ -23,6 +23,8 @@ from pyecharts.globals import ThemeType
 from jinja2 import Markup, Environment, FileSystemLoader
 from pyecharts.commons.utils import JsCode
 from pyecharts.faker import Faker
+
+import math
 
 @app.route('/analysis/index', methods=['POST','GET'])
 def index_customanalysis():
@@ -151,15 +153,22 @@ def index_customanalysis():
     # db.session.commit()
     # 排个序
 
-    return render_template('/customanalysis/index.html', group_dict = group_dict, length = len(group_dict['id']))
+    
+    NO_USE_ANALYSIS = app.config["NO_USE_ANALYSIS"]
+
+    return render_template('/customanalysis/index.html', group_dict = group_dict, length = len(group_dict['id']), NO_USE_ANALYSIS = NO_USE_ANALYSIS)
 
 @app.route('/analysis/create', methods=['POST','GET'])
 def create_analysis_group():
+    if app.config['NO_USE_ANALYSIS'] == "yes":
+        return abort(403)
     return render_template('/customanalysis/create.html')
 
 @app.route('/analysis/create/submit', methods=['POST', 'GET'])
 def submit_analysis_group():
     # print(json.loads(request.get_data()))
+    if app.config['NO_USE_ANALYSIS'] == "yes":
+        return abort(403)
     try:
         data = yaml.load(json.loads(request.get_data())['0'], Loader=yaml.FullLoader)
     except Exception as e:
@@ -650,6 +659,7 @@ def show_diagram1():
 
 
     x_data = [d[0] for d in diagram_data]
+    # y_data = [math.log(d[1]) for d in diagram_data]
     y_data = [d[1] for d in diagram_data]
 
     print(diagram_data)
@@ -690,13 +700,29 @@ def show_diagram1():
 
         # temp_dict = {'value': y_data[i], "data": ["config id: _" + str(config_id_list[i]), 111]}
         param_str = ""
-        params = MappingTaskConfig.query.get(config_id_list[i]).paramValues
+        config = MappingTaskConfig.query.get(config_id_list[i])
+        params = config.paramValues
+        task = config.mappingTasks[0]
+        algo = config.algorithm #.imageTag
+        dataset = config.dataset
         for param in params:
             # if param.valueType == "int" or param.valueType == "float":
             # print(param.algoParam.paramType)
             if param.algoParam.paramType == "Algorithm" or param.algoParam.paramType == "Dataset" or param.algoParam.paramType == "Dataset remap":
                 param_str += param.keyName + ":  " + param.value + "<br>"
 
+        param_str += "<br>"
+
+        param_str += "config ID: " + str(config_id_list[i]) + "<br>"
+        param_str += "task ID: " + str(task.id)  + "<br>"
+        param_str += "Algorithm name: " + algo.imageTag + "<br>"
+        param_str += "Dataset name: " + dataset.name + "<br>"
+
+        # 还需要其他信息
+        # config id
+        # task id
+        # algorithm name
+        # dataset name
         temp_dict = [y_data[i], param_str]
         for j in range(len(category_list)):
             if category == category_list[j]:
@@ -920,7 +946,7 @@ def show_diagram1_extend():
     for key, value in dataset_id_dict.items(): # algorithm_id_dict.items():
         # 生成一个color
         # 其他dataset的color以这个为中心
-        for dkey, dvalue in dataset_id_dict.items(): # dataset_id_dict.items():
+        for dkey, dvalue in algorithm_id_dict.items(): # dataset_id_dict.items():
             for config in value:
                 # 这个config必须在dvalue中
                 flag = False
@@ -983,10 +1009,12 @@ def show_diagram1_extend():
 
 
                 # diagram_data.append([x_v, y_v, key])
-                diagram_data.append([x_v, y_v])       
+                diagram_data.append([x_v, y_v, config])       
 
     print(diagram_data)
+    print("aaaaaaaa")
     x_data = [d[0] for d in diagram_data]
+    # y_data = [math.log(d[1]) for d in diagram_data]
     y_data = [d[1] for d in diagram_data]
     
     y_new_data = []
@@ -1001,16 +1029,17 @@ def show_diagram1_extend():
     category_list = []
     param_list = []
     for i in range(len(y_data)):
+
         # algo_id = MappingTaskConfig.query.get(config_id_list[i]).algorithm.id
-        algo_imageTag = MappingTaskConfig.query.get(config_id_list_old[i]).algorithm.imageTag
-        dataset_name = MappingTaskConfig.query.get(config_id_list_old[i]).dataset.name
+        algo_imageTag = diagram_data[i][2].algorithm.imageTag
+        dataset_name = diagram_data[i][2].dataset.name
         # category = dataset_name + "  " +  algo_imageTag
         category = algo_imageTag + "  " +  dataset_name
         
         
         if category not in category_list:
             category_list.append(category)
-            param_list.append(MappingTaskConfig.query.get(config_id_list_old[i]).paramValues)
+            param_list.append(diagram_data[i][2].paramValues)
             y_new_data.append([])
             x_new_data.append([])
         # print("sfdssd", y_data[i])
@@ -1021,12 +1050,23 @@ def show_diagram1_extend():
 
         # temp_dict = {'value': y_data[i], "data": ["config id: _" + str(config_id_list[i]), 111]}
         param_str = ""
-        params = MappingTaskConfig.query.get(config_id_list_old[i]).paramValues
+        config = diagram_data[i][2]
+        params = config.paramValues
+        task = config.mappingTasks[0]
+        algo = config.algorithm #.imageTag
+        dataset = config.dataset
         for param in params:
             # if param.valueType == "int" or param.valueType == "float":
             # print(param.algoParam.paramType)
             if param.algoParam.paramType == "Algorithm" or param.algoParam.paramType == "Dataset" or param.algoParam.paramType == "Dataset remap":
                 param_str += param.keyName + ":  " + param.value + "<br>"
+
+        param_str += "<br>"
+
+        param_str += "config ID: " + str(config_id_list[i]) + "<br>"
+        param_str += "task ID: " + str(task.id)  + "<br>"
+        param_str += "Algorithm name: " + algo.imageTag + "<br>"
+        param_str += "Dataset name: " + dataset.name + "<br>"
 
         temp_dict = [y_data[i], param_str]
         for j in range(len(category_list)):
@@ -1035,6 +1075,12 @@ def show_diagram1_extend():
                 y_new_data[j].append(temp_dict)
         
                 x_new_data[j].append([x_data[i]])
+
+                if diagram_data[i][2] == 3121:
+                    print(y_data[i], x_data[i])
+
+
+                
 
 
     # print(y_new_data)
@@ -1143,6 +1189,7 @@ def show_diagram1_extend():
 
 @app.route('/analysis/diagram/dig1',methods=['GET','POST'])
 def create_diagram1():
+    import math #log
     data = json.loads(request.get_data())
     print(data)
 
@@ -1193,23 +1240,33 @@ def create_diagram1():
     tray_unsuccess_id_list = ast.literal_eval((content.split("\n")[5].split(":")[1]))
     print(tray_unsuccess_id_list)
 
+    filter_traj_config_id_list = ast.literal_eval((content.split("\n")[6].split(":")[1]))
+
     config_id_list_old = config_id_list
     config_id_list  = []
     for id in config_id_list_old:
         if id not in  tray_unsuccess_id_list:
             config_id_list.append(id)
 
+    for id in filter_traj_config_id_list:
+        config_id_list.append(id)
+
     diagram_data = []
     x_data = []
     y_data = []
     algorithm_id_list = []
     category_list = []
+    max_y = -10000
+    evoResults_temp = MappingTaskConfig.query.get(config_id_list[0]).mappingTasks[0].evaluation.evoResults
     for i in range(len(config_id_list)):
         # 获取x y对应
         x_v = 0
         y_v = 0
         current_config = MappingTaskConfig.query.get(config_id_list[i])
-        evoResults = current_config.mappingTasks[0].evaluation.evoResults
+        if config_id_list[i] not in filter_traj_config_id_list:
+            evoResults = current_config.mappingTasks[0].evaluation.evoResults
+        else:
+            evoResults = evoResults_temp
         performanceresults = current_config.mappingTasks[0].performanceresults
         if x_axis == 'ATE-rmse':
             x_v = evoResults.ate_rmse
@@ -1291,7 +1348,15 @@ def create_diagram1():
             for paramValue in current_config.paramValues:
                 if y_axis == paramValue.name:
                     y_v = float(paramValue.value)
-                    break        
+                    break     
+
+        # if config_id_list[i] not in filter_traj_config_id_list: 
+        #     max_y = max(max_y, y_v)
+        # if config_id_list[i] in filter_traj_config_id_list:
+        #     y_v = max_y * 1.2
+
+
+        # y_v = math.log(y_v,2) 
         diagram_data.append([x_v, y_v])
 
         # 表格形式
@@ -1409,7 +1474,7 @@ def create_diagram1():
 
 
     for i in range(len(category_list)):
-        algo = Algorithm.query.get(category[i])
+        algo = Algorithm.query.get(category_list[i])
         plt.scatter(x=x_data[i], y=y_data[i],edgecolor=['w'], label=category_list[i], color = color_dict[category_list[i]], s = 300)
     plt.xlabel(x_axis + " " + x_unit)
     plt.ylabel(y_axis + " " + y_unit)
@@ -1428,7 +1493,7 @@ def create_diagram1():
     legend.prop.set_size(6)
     legend.get_frame().set_edgecolor('black')
     legend.get_frame().set_linewidth(0.5)
-
+    plt.grid(True)
     # 调整子图的布局
     plt.subplots_adjust(left=0.1, right=0.8, top=0.9, bottom=0.1)
 
@@ -1523,8 +1588,12 @@ def create_diagram1():
     diagram_data.update({x_axis: []})
     diagram_data.update({y_axis: []})
     diagram_data.update({"category": []})
-
-
+####
+    x_data = []
+    y_data = []
+    algorithm_id_list = []
+    category_list = []
+####
     for key, value in dataset_id_dict.items(): # 
         # 生成一个color
         # 其他dataset的color以这个为中心
@@ -1589,11 +1658,26 @@ def create_diagram1():
                                 break    
   
 
-
+                # y_v = math.log(y_v,2) 
                 # diagram_data.append([x_v, y_v, key])
                 diagram_data[x_axis].append(x_v)
                 diagram_data[y_axis].append(y_v)
                 diagram_data['category'].append(category)
+####
+                if category not in category_list:
+                    category_list.append(category)
+                    x_data.append([])
+                    y_data.append([])
+                
+                for j in range(len(category_list)):
+                    if category == category_list[j]:
+                        x_data[j].append(x_v)
+                        y_data[j].append(y_v)                
+####
+
+
+
+    
 
     csv_data = []
     config_id_title = "Config ID"
@@ -1658,10 +1742,11 @@ def create_diagram1():
 
 
     for i in range(len(category_list)):
-        algo = Algorithm.query.get(category[i])
+        algo = Algorithm.query.get(category_list[i])
         plt.scatter(x=x_data[i], y=y_data[i],edgecolor=['w'], label=category_list[i], color = color_dict[category_list[i]], s = 300)
     plt.xlabel(x_axis + " " + x_unit)
     plt.ylabel(y_axis + " " + y_unit)
+    plt.grid(True)
     # 添加图例
     handles, labels = ax.get_legend_handles_labels()
     labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
@@ -2464,7 +2549,7 @@ def show_diagram2_extend():
 @app.route('/analysis/diagram/dig2/',methods=['GET','POST'])
 def create_diagram2():
     data = json.loads(request.get_data())
-    print(data)
+    # print(data)
 
     custom_id = data['custom_id']
     x_axis = data['x-axis']
@@ -2512,27 +2597,38 @@ def create_diagram2():
 
 
     f = open("/slam_hive_results/custom_analysis_group/" + str(custom_id) + "/info.txt")
+
+    
     
     content = f.read()
     f.close()
     import ast
     config_id_list = ast.literal_eval((content.split("\n")[3].split(":")[1]))
 
-    print(config_id_list)
+    # print(config_id_list)
 
     tray_unsuccess_id_list = ast.literal_eval((content.split("\n")[5].split(":")[1]))
-    print(tray_unsuccess_id_list)
+    # print(tray_unsuccess_id_list)
 
     config_id_list_old = config_id_list
     config_id_list  = []
     for id in config_id_list_old:
         if id not in  tray_unsuccess_id_list:
             config_id_list.append(id)
- 
-
+    
+    try:
+        filter_traj_config_id_list = ast.literal_eval((content.split("\n")[6].split(":")[1]))
+    except Exception as e:
+        filter_traj_config_id_list = []
     # 需要解析custom的id
-
-
+    # print("****************",filter_traj_config_id_list)
+    # 如果y轴不是ate or rpe的话，就不管filter了
+    if "ATE" not in z_axis and "RPE" not in z_axis:
+        filter_traj_config_id_list = []
+    if "ATE" in x_axis or "RPE" in x_axis:
+        filter_traj_config_id_list = []
+    if "ATE" in y_axis or "RPE" in y_axis:
+        filter_traj_config_id_list = []
         # 首先判断group中的config -- algo：任意都可以（但是貌似不是同一个算法意义不大）;dataset: 相同
 
     diagram_data = {}
@@ -2540,12 +2636,20 @@ def create_diagram2():
     diagram_data.update({y_axis: []})
     diagram_data.update({z_axis: []})
     diagram_data.update({"category": []})
+
+    print("****************",filter_traj_config_id_list)
+
+    # new_config_id_list = config_id_list
+    for i in range(len(filter_traj_config_id_list)):
+        config_id_list.append(filter_traj_config_id_list[i])
+    max_z = -99999
     for i in range(len(config_id_list)):
         # 获取x y对应
         x_v = 0
         y_v = 0
         current_config = MappingTaskConfig.query.get(config_id_list[i])
-        evoResults = current_config.mappingTasks[0].evaluation.evoResults
+        if current_config.id not in filter_traj_config_id_list:
+            evoResults = current_config.mappingTasks[0].evaluation.evoResults
         performanceresults = current_config.mappingTasks[0].performanceresults
         # category = current_config.dataset.name + "  " + current_config.algorithm.imageTag
         category = current_config.algorithm.imageTag + "  " + current_config.dataset.name
@@ -2631,51 +2735,60 @@ def create_diagram2():
                     y_v = float(paramValue.value)
                     break   
 
-        if z_axis == 'ATE-rmse':
-            z_v = evoResults.ate_rmse
-        elif z_axis == 'ATE-mean':
-            z_v = evoResults.ate_mean
-        elif z_axis == 'ATE-median':
-            z_v = evoResults.ate_median
-        elif z_axis == 'ATE-std':
-            z_v = evoResults.ate_std
-        elif z_axis == 'ATE-min':
-            z_v = evoResults.ate_min
-        elif z_axis == 'ATE-max':
-            z_v = evoResults.ate_max
-        elif z_axis == 'ATE-sse':
-            z_v = evoResults.ate_sse
-        elif z_axis == 'RPE-mean':
-            z_v = evoResults.rpe_mean
-        elif z_axis == 'RPE-median':
-            z_v = evoResults.rpe_median
-        elif z_axis == 'RPE-std':
-            z_v = evoResults.rpe_std
-        elif z_axis == 'RPE-min':
-            z_v = evoResults.rpe_min
-        elif z_axis == 'RPE-max':
-            z_v = evoResults.rpe_max
-        elif z_axis == 'RPE-sse':
-            z_v = evoResults.rpe_sse
-        elif z_axis == 'RPE-rmse':
-            z_v = evoResults.rpe_rmse
-        elif z_axis == 'CPU-max':
-            z_v = performanceresults.max_cpu
-        elif z_axis == 'CPU-mean':
-            z_v = performanceresults.mean_cpu
-        elif z_axis == 'Memory-max':
-            z_v = performanceresults.max_ram
+        if current_config.id in filter_traj_config_id_list:
+            # print("sfsfsfsdfsdfsdfsdfsdf", z_v)
+            z_v = max_z * 10
         else:
-            # parameter
-            for paramValue in current_config.paramValues:
-                if z_axis == paramValue.name:
-                    z_v = float(paramValue.value)
-                    break    
+            if z_axis == 'ATE-rmse':
+                z_v = evoResults.ate_rmse
+            elif z_axis == 'ATE-mean':
+                z_v = evoResults.ate_mean
+            elif z_axis == 'ATE-median':
+                z_v = evoResults.ate_median
+            elif z_axis == 'ATE-std':
+                z_v = evoResults.ate_std
+            elif z_axis == 'ATE-min':
+                z_v = evoResults.ate_min
+            elif z_axis == 'ATE-max':
+                z_v = evoResults.ate_max
+            elif z_axis == 'ATE-sse':
+                z_v = evoResults.ate_sse
+            elif z_axis == 'RPE-mean':
+                z_v = evoResults.rpe_mean
+            elif z_axis == 'RPE-median':
+                z_v = evoResults.rpe_median
+            elif z_axis == 'RPE-std':
+                z_v = evoResults.rpe_std
+            elif z_axis == 'RPE-min':
+                z_v = evoResults.rpe_min
+            elif z_axis == 'RPE-max':
+                z_v = evoResults.rpe_max
+            elif z_axis == 'RPE-sse':
+                z_v = evoResults.rpe_sse
+            elif z_axis == 'RPE-rmse':
+                z_v = evoResults.rpe_rmse
+            elif z_axis == 'CPU-max':
+                z_v = performanceresults.max_cpu
+            elif z_axis == 'CPU-mean':
+                z_v = performanceresults.mean_cpu
+            elif z_axis == 'Memory-max':
+                z_v = performanceresults.max_ram
+            else:
+                # parameter
+                for paramValue in current_config.paramValues:
+                    if z_axis == paramValue.name:
+                        z_v = float(paramValue.value)
+                        break    
 
+        if current_config.id not in filter_traj_config_id_list:
+            max_z = max(max_z, z_v)
         diagram_data[x_axis].append(x_v)
         diagram_data[y_axis].append(y_v)
         diagram_data[z_axis].append(z_v)
         diagram_data['category'].append(category)
+
+    # ln_numbers = [math.log(z) for z in diagram_data[z_axis]]
+    # diagram_data[z_axis] = ln_numbers
 
     
     print(diagram_data)
@@ -2716,8 +2829,6 @@ def create_diagram2():
     # 将DataFrame保存为CSV文件
     dff.to_csv(csv_path, index=False)    
     
-
-
     df = pd.DataFrame(diagram_data)#, columns=[x_axis, y_axis])
     # plt.figure(figsize=(10, 8))
     # fig = sns.scatterplot(x=x_axis, y=y_axis, data=df, hue='category')
@@ -2754,13 +2865,31 @@ def create_diagram2():
     # 基础调色板husl  hsv
     base_palette = sns.color_palette("dark", len(unique_A))
 
+    base_palette_algo = sns.color_palette("dark", 16) # add
+
     # 创建颜色字典，按A和B分类
     color_dict = {}
     for i, a in enumerate(unique_A):
         # sub_palette = sns.light_palette(base_palette[i], n_colors=len(unique_B))
         sub_palette = sns.light_palette(base_palette[i], len(unique_B) * 5)
+        # for j, b in enumerate(unique_B): # add
+        #     color_dict[f"{a}  {b}"] = sub_palette[j*5 + 4]  # add  
+        num = -1
+        if "orb-slam2" in a:
+            num = 0
+        if "orb-slam3" in a:
+            num = 4
+        if "vins-mono" in a:
+            num = 8
+        if "vins-fusion" in a:
+            num = 12 
+
         for j, b in enumerate(unique_B):
-            color_dict[f"{a}  {b}"] = sub_palette[j*5 + 4]    
+            color_dict[f"{a}  {b}"] = sub_palette[j*5 + 4]  
+            if num != -1:
+                sub_palette_algo = sns.light_palette(base_palette_algo[num], len(unique_B) * 5)
+                color_dict[f"{a}  {b}"] = sub_palette_algo[j*5 + 4]          
+        # add
 
     # 创建图形对象
     fig = plt.figure(figsize=(60, 20))
@@ -2769,7 +2898,7 @@ def create_diagram2():
     # 绘制三维散点图
     for cat in df['category'].unique():
         subset = df[df['category'] == cat]
-        ax.scatter(subset[x_axis], subset[y_axis], subset[z_axis], color=color_dict[cat], label=cat, s = 500)
+        ax.scatter(subset[x_axis], subset[y_axis], subset[z_axis], color=color_dict[cat], label=cat, s = 600)
 
     handles, labels = ax.get_legend_handles_labels()
     labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
@@ -2787,9 +2916,9 @@ def create_diagram2():
     legend.get_frame().set_linewidth(0.5)
     plt.subplots_adjust(left=0.1, right=0.8, top=0.9, bottom=0.1)
     # 设置坐标轴标签
-    ax.set_xlabel(x_axis + " " + x_unit)
-    ax.set_ylabel(y_axis + " " + y_unit)
-    ax.set_zlabel(z_axis + " " + z_unit)
+    ax.set_xlabel(x_axis + " " + x_unit, labelpad=50)
+    ax.set_ylabel(y_axis + " " + y_unit, labelpad=50)
+    ax.set_zlabel(z_axis + " " + z_unit, labelpad=50)
 
     # # 设置刻度线的位置和标签
     # ax.set_xticks(np.arange(0, 1.1, 0.1))
@@ -2865,7 +2994,6 @@ def create_diagram2():
 
     ret = custom_analysis_resolver.get_Extend_accuracy(old_suit_configs_list, suit_configs_list, Extend_axis, Extend_attribute, extend_threshold,extend_multiple)
     # 应该要返回3个列表的列表，每个列表里有新的数据（列表里面的元素是字典）
-    print(1)
 
     algorithm_id_dict = {}
     for config in old_suit_configs_list:
@@ -2953,6 +3081,8 @@ def create_diagram2():
         diagram_data[z_axis].append(z_v)
         diagram_data['category'].append(category)
 
+    # ln_numbers = [math.log(z) for z in diagram_data[z_axis]]
+    # diagram_data[z_axis] = ln_numbers
 
     csv_data = []
     config_id_title = "Config ID"
@@ -2986,7 +3116,7 @@ def create_diagram2():
     dff.to_csv(csv_path, index=False)    
 
     
-    print(diagram_data)
+    # print(diagram_data)
     df = pd.DataFrame(diagram_data)
    # 基础颜色映射（按B分类）
     unique_categories = df['category'].unique()

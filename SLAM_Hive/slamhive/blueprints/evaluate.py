@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Xinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -104,6 +104,7 @@ def CheckEVO(id):
             #push state to the frontend
             socketio.emit('update_eval_state', {'data': 'Evaluation task ' + str(id)+' is done'})
         except Exception as e:
+            print(e)
             delete_evaluate_when_running(id)
             
 
@@ -278,30 +279,12 @@ def create_evaluate(id):
     scheduler.add_job(id=str(eval.id), func=CheckEVO, args=[eval.id], trigger="interval", seconds=3)
     return redirect(url_for('index_evaluate_single'))
 
-# CHANGE OK
-@app.route('/eval/create/batch', methods=['GET', 'POST'])
-def create_evaluate_batch():
 
-    version = app.config['CURRENT_VERSION']
-    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
-        return abort(403)
+def run_batch_evaluation(mappingtaskIdList):
+    # 楼下写成一个函数
 
-    # 需要筛选一次，将unsuccess的去掉
+    # mappingtaskIdList = [3468, 3467]
 
-    data = json.loads(request.get_data())
-    print(data)
-    mappingtaskIdList = []
-    for value in data.values():
-        # CHANGE
-        # Unsuccess
-        current_mappingtask = MappingTask.query.get(value["mappingTaskID"])
-        traj_state = current_mappingtask.trajectory_state
-        if traj_state == "Success" and current_mappingtask.evaluation == None: # 只会处理轨迹正常的情况
-            mappingtaskIdList.append(value["mappingTaskID"])
-
-    if len(mappingtaskIdList) == 0:
-        return jsonify(result='no task')
-    
     eval_number = len(mappingtaskIdList)
     print(eval_number)
     print(mappingtaskIdList)
@@ -328,6 +311,54 @@ def create_evaluate_batch():
     # RunEVO_batch(trajFolder, datasetName, eval_id, mappingtaskIdList)
     scheduler.add_job(id=str(eval[0].id), func=CheckEVO_batch, args=[eval_id], trigger="interval", seconds=3)
     # return redirect(url_for('index_evaluate'))
+
+
+@app.route('/eval/create_remain')
+def create_evaluate_remain():
+
+    version = app.config['CURRENT_VERSION']
+    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+        return abort(403)
+
+    # 首先找出所有没有eva的task
+    remain_task_id = []
+    all_tasks = MappingTask.query.order_by(MappingTask.id.desc()).all()
+    for task in all_tasks:
+        if task.state == "Finished" and task.trajectory_state == "Success" and task.evaluation == None:
+            remain_task_id.append(str(task.id))
+    # print(len(remain_task_id), remain_task_id)
+
+    run_batch_evaluation(remain_task_id)
+    return redirect(url_for('index_evaluate_single')) 
+    # return 
+
+# CHANGE OK
+@app.route('/eval/create/batch', methods=['GET', 'POST'])
+def create_evaluate_batch():
+
+    version = app.config['CURRENT_VERSION']
+    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+        return abort(403)
+
+    # 需要筛选一次，将unsuccess的去掉
+
+    data = json.loads(request.get_data())
+    print(data)
+    mappingtaskIdList = []
+    for value in data.values():
+        # CHANGE
+        # Unsuccess
+        current_mappingtask = MappingTask.query.get(value["mappingTaskID"])
+        traj_state = current_mappingtask.trajectory_state
+        if traj_state == "Success" and current_mappingtask.evaluation == None: # 只会处理轨迹正常的情况
+            mappingtaskIdList.append(value["mappingTaskID"])
+
+    if len(mappingtaskIdList) == 0:
+        return jsonify(result='no task')
+    
+    run_batch_evaluation(mappingtaskIdList)
+    
+
     return jsonify(result='success')
 
 # CHANGE OK
@@ -949,6 +980,11 @@ def delete_evaluate_when_running(id):
     print(ma)
     ma.trajectory_state = "Unsuccess"
     db.session.delete(eval)
+
+
+    # 同时在这里判断，如果轨迹是在通过evo之后被判定为Unsuccess,则需要将之前计算的traj_lenght修改为0.0
+    ma.traj_length = 0.0
+
     db.session.commit()
     # flash('Deleted!')
     # return redirect(url_for('index_evaluate_single'))

@@ -1,4 +1,4 @@
-import docker, time, os, yaml, requests, json, datetime, csv
+import docker, time, os, yaml, requests, json, datetime, csv, math
 import numpy as np
 import matplotlib.pyplot as plt
 from dateutil import parser
@@ -254,20 +254,67 @@ def check_resolver(data, configs, comb_configs):
                 second_list_set = set(list(second_list_set & second_list_2_set))
         
         #得到了前后两个集合 差集
-        final_config_list = list(first_list_set  - second_list_set)
-        print("config list")
-        print(first_list_set)
-        print(second_list_set)
-        print(final_config_list)
+        final_config_id_list = list(first_list_set  - second_list_set)
+        # print("config list")
+        # print(first_list_set)
+        # print(second_list_set)
+        # print(final_config_id_list)
 
-        if len(final_config_list) == 0: # 规则筛选出的config的数量为0，无法评估
+#### 根据长度再筛选一次
+#######################################################3
+#######################################################
+#######################################################
+
+        filter_traj_config_id_list = []
+
+        # 首先判断是否有相应的key'
+        unsuccess_number = 0
+        print("origin config number: ",len(final_config_id_list))
+        new_final_config_id_list = []
+        if "trajectory_length_lower_bound" not in data['configuration_choose']:
+            # 认为没有限制
+            pass
+        else:
+            trajectory_length_lower_bound = data['configuration_choose']['trajectory_length_lower_bound']
+            for id in final_config_id_list:
+                config = MappingTaskConfig.query.get(id)
+                current_traj_len = config.mappingTasks[0].traj_length
+                if current_traj_len > float(trajectory_length_lower_bound):
+                    # 符合条件
+                    new_final_config_id_list.append(id)
+                else:
+                    filter_traj_config_id_list.append(id)
+                if config.mappingTasks[0].trajectory_state == "Unsuccess":
+                    unsuccess_number += 1
+            final_config_id_list = new_final_config_id_list
+        
+####
+
+
+        if len(final_config_id_list) == 0: # 规则筛选出的config的数量为0，无法评估
             return False, "the config number is zero now!"
 
+        print("new config number: ",len(final_config_id_list))
+        print("unsuccess number: ",unsuccess_number)
+        # origin config number:  1500
+        # new config number:  818
+        # unsuccess number:  429
+        # 记得还要筛选掉ate or rpe太大的（设置一个上限）
+        ## 这个在search中体现
+        ## ate的上限多试试几组 e找一个比较好看的
+
+        # +上ate max后，然后修改extend的范围，就可以画一张图了；没问题就可以逐个完善了；做完之后就可以做其他的了
+
+        # return 
 
         suit_configs_list = []
         for config in configs:
-            if config.id in final_config_list:
+            if config.id in final_config_id_list:
                 suit_configs_list.append(config)
+        
+        # 后面的所有结果应该都存储在这个list里了
+        # suit_configs_list是config的列表
+        # final_config_id_list是config id的列表
         
     
         # 得到的结果存储在下面这个列表里面0
@@ -303,9 +350,6 @@ def check_resolver(data, configs, comb_configs):
     # extend_multiple: [1, 2, 5, 10]
 
 
-
-
-    #论文里就写：为了避免这些情况（很短一段轨迹；失败的情况无法直接出现在图标上；。。。） 但是又想将他们进行统一的比较
 
 
     # 一个很好的例子
@@ -347,7 +391,7 @@ def check_resolver(data, configs, comb_configs):
         # 判断是否有config没有完全w做完
         traj_unsuccess_configs_id_list = []
 
-        for config_id in final_config_list:
+        for config_id in final_config_id_list:
             current_config = all_configs_dict[config_id]
 
             if len(current_config.mappingTasks) == 0:
@@ -360,13 +404,13 @@ def check_resolver(data, configs, comb_configs):
                 if current_config.mappingTasks[0].evaluation is None:
                     return False, "configuration " + str(current_config.id) + "'s task haven't created evaluation!"
         
-        # if len(traj_unsuccess_configs_id_list) == len(final_config_list):
+        # if len(traj_unsuccess_configs_id_list) == len(final_config_id_list):
         #     return False ## 轨迹全都失败了，也没有比较的必要了？有吗
 
         # 判断是否符合 algo+dataset的条件
-        algorithm_id = all_configs_dict[final_config_list[0]].algorithm.id
-        dataset_id = all_configs_dict[final_config_list[0]].dataset.id
-        for config_id in final_config_list:
+        algorithm_id = all_configs_dict[final_config_id_list[0]].algorithm.id
+        dataset_id = all_configs_dict[final_config_id_list[0]].dataset.id
+        for config_id in final_config_id_list:
             if algorithm_dataset_type in [0,2]: # same algo
                 if algorithm_id != all_configs_dict[config_id].algorithm.id:
                     # 所筛选出的config不满足same algorithm and same dataset
@@ -380,7 +424,7 @@ def check_resolver(data, configs, comb_configs):
 
         
 
-        for config_id in final_config_list:
+        for config_id in final_config_id_list:
             config = all_configs_dict[config_id]
             fre_number = 0
             for i in range(len(config.paramValues)):
@@ -426,7 +470,7 @@ def check_resolver(data, configs, comb_configs):
             if 1 not in evaluation_type[algorithm_dataset_type]:
                 return False, "You can't choose 1_trajectory_comparison"
             # 数量限制
-            if len(final_config_list) > TRAJ_MAX_NUMBER:
+            if len(final_config_id_list) > TRAJ_MAX_NUMBER:
                 return False, "Too many trajectories!"
             # 根据之前的判断，一定存在task和evo结果
         ana_content += "1:"+str(analysis_1) + "\n"
@@ -440,7 +484,7 @@ def check_resolver(data, configs, comb_configs):
             if 2 not in evaluation_type[algorithm_dataset_type]:
                 return False, "You can't choose 2_accuracy_metrics_comparison"
             # 数量限制
-            if len(final_config_list) > TRAJ_MAX_NUMBER:
+            if len(final_config_id_list) > TRAJ_MAX_NUMBER:
                 return False, "Too many trajectories!"
         ana_content += "2:"+str(analysis_2) + "\n"
         print(222)
@@ -463,9 +507,12 @@ def check_resolver(data, configs, comb_configs):
             
             # 这里应该还是要选择到的吧
             ## final_parameter_array, algorithm_id_list, dataset_id_list = pre_handle_accuracy_metrics_comparison(data, configs)
-            final_parameter_array, algorithm_id_list, dataset_id_list = pre_handle_accuracy_metrics_comparison(data, suit_configs_list, traj_unsuccess_configs_id_list)
+            final_parameter_array, algorithm_id_list, dataset_id_list, config_array_3 = pre_handle_accuracy_metrics_comparison(data, suit_configs_list, traj_unsuccess_configs_id_list)
             if final_parameter_array == False:
                 return False, "Can't generate 3_accuracy_metrics_comparison!"
+            print("parameter: ---------------")
+            print(final_parameter_array)
+            # return 
         
         ana_content += "3:"+str(analysis_3) + "\n"
         print(333)        
@@ -496,7 +543,7 @@ def check_resolver(data, configs, comb_configs):
         configs_parameter_dict_copy = configs_parameter_dict
         configs_parameter_dict = {}
         for d in configs_parameter_dict_copy.items():
-            if d[1] == len(final_config_list):
+            if d[1] == len(final_config_id_list):
                 configs_parameter_dict.update({d[0]: d[1]})
 
         print("--- parameter dict ----")
@@ -523,7 +570,7 @@ def check_resolver(data, configs, comb_configs):
         #         if analysis_5_x not in configs_parameter_dict.keys():
         #             return False
         #         # 并且需要所有的configs都有这个pamrater
-        #         if configs_parameter_dict[analysis_5_x] != len(final_config_list):
+        #         if configs_parameter_dict[analysis_5_x] != len(final_config_id_list):
         #             return False
         #     if analysis_5_x in accuracy_list:
         #         analysis_5_x_type = 0
@@ -539,7 +586,7 @@ def check_resolver(data, configs, comb_configs):
         #         if analysis_5_y not in configs_parameter_dict.keys():
         #             return False
         #         # 并且需要所有的configs都有这个pamrater(根据数量判断)
-        #         if configs_parameter_dict[analysis_5_y] != len(final_config_list):
+        #         if configs_parameter_dict[analysis_5_y] != len(final_config_id_list):
         #             return False
         #     if analysis_5_y in accuracy_list:
         #         analysis_5_y_type = 0
@@ -550,7 +597,7 @@ def check_resolver(data, configs, comb_configs):
 
         #     # 判断参数
         #     #  现在不需要这个了；因为简化了条件：必须只能选择每个config都有的parameter
-        #     # if not pre_handle_scatter(data, final_config_list, 5, analysis_5_x_type, analysis_5_y_type):
+        #     # if not pre_handle_scatter(data, final_config_id_list, 5, analysis_5_x_type, analysis_5_y_type):
         #     #     return False
         # ana_content += "5:"+str(analysis_5) + "\n"
         # print(555)
@@ -577,7 +624,7 @@ def check_resolver(data, configs, comb_configs):
                 if analysis_6_x not in configs_parameter_dict.keys():
                     return False, "error x axis!"
                 # 并且需要所有的configs都有这个pamrater
-                if configs_parameter_dict[analysis_6_x] != len(final_config_list):
+                if configs_parameter_dict[analysis_6_x] != len(final_config_id_list):
                     return False, "error x axis!"
             if analysis_6_x in accuracy_list:
                 analysis_6_x_type = 0
@@ -592,7 +639,7 @@ def check_resolver(data, configs, comb_configs):
                 if analysis_6_y not in configs_parameter_dict.keys():
                     return False, "error y axis!"
                 # 并且需要所有的configs都有这个pamrater
-                if configs_parameter_dict[analysis_6_y] != len(final_config_list):
+                if configs_parameter_dict[analysis_6_y] != len(final_config_id_list):
                     return False, "error y axis!"
             if analysis_6_y in accuracy_list:
                 analysis_6_y_type = 0
@@ -601,7 +648,7 @@ def check_resolver(data, configs, comb_configs):
             if analysis_6_y_type == analysis_6_x_type:
                 return False, "error x axis and y sxis (shouldn't be same)!"
             ## TODO 是否需要判断paramter是否属于不同的algorithm的具有不同意义的parameter
-            # if not pre_handle_scatter(data, final_config_list, 6, analysis_6_x_type, analysis_6_y_type):
+            # if not pre_handle_scatter(data, final_config_id_list, 6, analysis_6_x_type, analysis_6_y_type):
             #     return False
 
 
@@ -641,7 +688,7 @@ def check_resolver(data, configs, comb_configs):
                 if analysis_7_x not in configs_parameter_dict.keys():
                     return False, "error x axis!"
                 # 并且需要所有的configs都有这个pamrater
-                if configs_parameter_dict[analysis_7_x] != len(final_config_list):
+                if configs_parameter_dict[analysis_7_x] != len(final_config_id_list):
                     return False, "error x axis!"
             if analysis_7_x in accuracy_list:
                 analysis_7_x_type = 0
@@ -657,7 +704,7 @@ def check_resolver(data, configs, comb_configs):
                 if analysis_7_y not in configs_parameter_dict.keys():
                     return False, "error y axis!"
                 # 并且需要所有的configs都有这个pamrater
-                if configs_parameter_dict[analysis_7_y] != len(final_config_list):
+                if configs_parameter_dict[analysis_7_y] != len(final_config_id_list):
                     return False, "error y axis!"
             if analysis_7_y in accuracy_list:
                 analysis_7_y_type = 0
@@ -673,7 +720,7 @@ def check_resolver(data, configs, comb_configs):
                 if analysis_7_z not in configs_parameter_dict.keys():
                     return False, "error z axis!"
                 # 并且需要所有的configs都有这个pamrater
-                if configs_parameter_dict[analysis_7_z] != len(final_config_list):
+                if configs_parameter_dict[analysis_7_z] != len(final_config_id_list):
                     return False, "error z axis!"
             if analysis_7_z in accuracy_list:
                 analysis_7_z_type = 0
@@ -696,7 +743,7 @@ def check_resolver(data, configs, comb_configs):
                     extend_multiple_7 = data['evaluation_form']['7_3d_scatter_diagram']['extend_multiple']
 
             ## TODO 是否需要判断paramter是否属于不同的algorithm的具有不同意义的parameter
-            # if not pre_handle_scatter(data, final_config_list, 7, analysis_7_x_type, analysis_7_y_type):
+            # if not pre_handle_scatter(data, final_config_id_list, 7, analysis_7_x_type, analysis_7_y_type):
             #     return False
         ana_content += "7:"+str(analysis_7) + "\n"
         print("777")
@@ -815,16 +862,16 @@ def check_resolver(data, configs, comb_configs):
         content += "time:"+now_time+"\n"
         content += "name:"+data["group_name"]+"\n"
         content += "config_id:["
-        for i in range(len(final_config_list)-1):
-            content += str(final_config_list[i])+","
-        content += str(final_config_list[len(final_config_list)-1]) + "]\n"
-        print("***")
+        for i in range(len(final_config_id_list)-1):
+            content += str(final_config_id_list[i])+","
+        content += str(final_config_id_list[len(final_config_id_list)-1]) + "]\n"
+
 
         para_list = []
         for d in configs_parameter_dict.items():
             para_list.append(d[0])
         content += "parameters_list:" + str(para_list) + "\n"
-        print("***")
+
         
         content += "unsuccess_traj_config:["
         if len(traj_unsuccess_configs_id_list) == 0:
@@ -834,7 +881,15 @@ def check_resolver(data, configs, comb_configs):
                 print(i)
                 content += str(traj_unsuccess_configs_id_list[i])+","
             content += str(traj_unsuccess_configs_id_list[len(traj_unsuccess_configs_id_list)-1]) + "]\n"
-        print("***")
+
+        content += "filter_traj_config:[" # 第7行
+        if len(filter_traj_config_id_list) == 0:
+            content += "]\n"
+        else:
+            for i in range(len(filter_traj_config_id_list)-1):
+                print(i)
+                content += str(filter_traj_config_id_list[i])+","
+            content += str(filter_traj_config_id_list[len(filter_traj_config_id_list)-1]) + "]\n"
 
         # 将config写入
         with open(folder_path + "/info.txt", "w") as f:
@@ -868,7 +923,7 @@ def check_resolver(data, configs, comb_configs):
             os.mkdir(folder_path + "/accuracy_metrics_comparison")
             # 这个要试一试，能不能处理unsuccess的n情况
             new_folder_path = folder_path + "/accuracy_metrics_comparison/"
-            generation_accuracy_metrics_comparison(data, suit_configs_list, new_folder_path, file_name, final_parameter_array, algorithm_id_list, dataset_id_list, traj_unsuccess_configs_id_list)
+            generation_accuracy_metrics_comparison(data, suit_configs_list, new_folder_path, file_name, final_parameter_array, algorithm_id_list, dataset_id_list, traj_unsuccess_configs_id_list, config_array_3)
         if analysis_4 == 1:       # 可以不用管，反正轨迹失败了也有结果
             # 生成cpu 和 ram usage
             # 参考之前的代码，将多个轨迹画在一张图上
@@ -881,12 +936,12 @@ def check_resolver(data, configs, comb_configs):
         if analysis_6 == 1:
             os.mkdir(folder_path + "/scatter")
             new_folder_path = folder_path + "/scatter/"
-            generation_scatter(data, suit_configs_list,new_folder_path, file_name,6, traj_unsuccess_configs_id_list,   extend_threshold,extend_multiple)
+            generation_scatter(data, suit_configs_list,new_folder_path, file_name,6, traj_unsuccess_configs_id_list,   extend_threshold,extend_multiple, filter_traj_config_id_list)
 
         if analysis_7 == 1:
             os.mkdir(folder_path + "/3d_scatter")
             new_folder_path = folder_path + "/3d_scatter/"
-            generation_3d_scatter(data, suit_configs_list,new_folder_path, file_name,7, traj_unsuccess_configs_id_list  , extend_threshold_7,extend_multiple_7)       
+            generation_3d_scatter(data, suit_configs_list,new_folder_path, file_name,7, traj_unsuccess_configs_id_list  , extend_threshold_7,extend_multiple_7, filter_traj_config_id_list)       
 
         if analysis_8 == 1:
             os.mkdir(folder_path + "/repeatability_test")
@@ -1070,7 +1125,7 @@ def pre_handle_accuracy_metrics_comparison(data, configs, traj_unsuccess_configs
         if config.algorithm.id in algorithm_id_list and config.dataset.id in dataset_id_list:
             suit_configs.append(config)
     
-    # [[[], []], []]: 最外层 algo id；内层 dataset id；元素 config的list
+    # [[[[], []], []], []]: 最外层 algo id；内层 dataset id；元素 config的list; 加一层：config的不同task
     # 顺序按照两个list的顺序
     config_array = []
     parameter_array = []
@@ -1106,12 +1161,10 @@ def pre_handle_accuracy_metrics_comparison(data, configs, traj_unsuccess_configs
         # TODO 评估这个 需要再n创建几个config 运行在不同的算法上
     
     print(config_array)
-    print(1)
     for i in range(len(algorithm_id_list)):
         for j in range(len(dataset_id_list)):   
             if len(config_array[i][j]) == 0:
                 print(algorithm_id_list[i], dataset_id_list[j])
-
 
     # 然后再遍历一次，看是否二维数组的每一个位置都有至少一个config
     for i in range(len(algorithm_id_list)):
@@ -1122,85 +1175,92 @@ def pre_handle_accuracy_metrics_comparison(data, configs, traj_unsuccess_configs
                 # 这里假定了config一定运行过
 
                 # 但是存在 运行了 但是unsuccess的n情况，这种情况特殊判断
-                return False, False, False
-    
-    # 都有了，现在计算最优值还是平均值
+                return False, False, False, False
+    # 都有了
     for i in range(len(algorithm_id_list)):
         for j in range(len(dataset_id_list)):
             # ate_mean
-            #print(i, j)
+            print(i, j)
             metric = data['evaluation_form']['3_accuracy_metrics_comparison']['metric']
             # 可能会
+            
             for k in range(len(config_array[i][j])):
-                #print(config_array[i][j][k])
-                if config_array[i][j][k].mappingTasks[0].trajectory_state == "Unsuccess":
-                    parameter_array[i][j].append("Unsuccess")
-                    continue
-                # print("-------")
-                # print(config_array[i][j][k].id)
-                if metric == 'ate_rmse':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_rmse)
-                if metric == 'ate_mean':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_mean)
-                if metric == 'ate_median':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_median)
-                if metric == 'ate_std':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_std)
-                if metric == 'ate_min':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_min)
-                if metric == 'ate_max':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_max)
-                if metric == 'ate_sse':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.ate_sse)
-                if metric == 'rpe_rmse':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_rmse)
-                if metric == 'rpe_mean':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_mean)
-                if metric == 'rpe_median':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_median)
-                if metric == 'rpe_std':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_std)
-                if metric == 'rpe_min':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_min)
-                if metric == 'rpe_max':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_max)
-                if metric == 'rpe_sse':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].evaluation.evoResults.rpe_sse)
-                if metric == 'cpu_mean':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].performanceresults.mean_cpu)
-                if metric == 'cpu_max':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].performanceresults.max_cpu)
-                if metric == 'ram_max':
-                    parameter_array[i][j].append(config_array[i][j][k].mappingTasks[0].performanceresults.max_ram)
-    for i in range(len(algorithm_id_list)):
-        for j in range(len(dataset_id_list)):
-            calculate_method = data['evaluation_form']['3_accuracy_metrics_comparison']['calculate_method']
-            current_result = 0
-            if calculate_method == 0: # average
-                current_number = len(parameter_array[i][j])
-                for parameter in parameter_array[i][j]:
-                    if current_result != "Unsuccess":
-                        current_result += parameter
-                    else:
-                         current_result += 0
-                if current_result != 0:
-                    current_result /= current_number
-                else:
-                    current_result = 0
-                    # TODO 给予假设：不会有一个正常的数据 为 0
-            else: # min
-                current_result = 9999999
-                for parameter in parameter_array[i][j]:
-                    if parameter != "Unsuccess":
-                        if parameter < current_result:
-                            current_result = parameter
-                if current_result == 9999999:
-                    current_result = 0
-            final_parameter_array[i][j] = current_result
-    print("analysis 3 pre handle result")
-    print(final_parameter_array)
-    # 下载这个
-    return final_parameter_array, algorithm_id_list, dataset_id_list
+                parameter_array[i][j].append([])
+                print(config_array[i][j][k].mappingTasks)
+                for l in range(len(config_array[i][j][k].mappingTasks)):
+                    print("l",l)
+                    
+
+                    if config_array[i][j][k].mappingTasks[l].trajectory_state == "Unsuccess":
+                        parameter_array[i][j][k].append("Unsuccess")
+                        continue
+                    # print("-------")
+                    # print(config_array[i][j][k].id)
+
+                    if metric == 'ate_rmse':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_rmse)
+                    if metric == 'ate_mean':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_mean)
+                    if metric == 'ate_median':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_median)
+                    if metric == 'ate_std':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_std)
+                    if metric == 'ate_min':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_min)
+                    if metric == 'ate_max':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_max)
+                    if metric == 'ate_sse':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.ate_sse)
+                    if metric == 'rpe_rmse':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_rmse)
+                    if metric == 'rpe_mean':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_mean)
+                    if metric == 'rpe_median':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_median)
+                    if metric == 'rpe_std':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_std)
+                    if metric == 'rpe_min':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_min)
+                    if metric == 'rpe_max':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_max)
+                    if metric == 'rpe_sse':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].evaluation.evoResults.rpe_sse)
+                    if metric == 'cpu_mean':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].performanceresults.mean_cpu)
+                    if metric == 'cpu_max':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].performanceresults.max_cpu)
+                    if metric == 'ram_max':
+                        parameter_array[i][j][k].append(config_array[i][j][k].mappingTasks[l].performanceresults.max_ram)
+    # for i in range(len(algorithm_id_list)):
+    #     for j in range(len(dataset_id_list)):
+    #         calculate_method = data['evaluation_form']['3_accuracy_metrics_comparison']['calculate_method']
+    #         current_result = 0
+    #         if calculate_method == 0: # average
+    #             current_number = len(parameter_array[i][j])
+    #             for parameter in parameter_array[i][j]:
+    #                 if current_result != "Unsuccess":
+    #                     current_result += parameter
+    #                 else:
+    #                      current_result += 0
+    #             if current_result != 0:
+    #                 current_result /= current_number
+    #             else:
+    #                 current_result = 0
+    #                 # TODO 给予假设：不会有一个正常的数据 为 0
+    #         else: # min
+    #             current_result = 9999999
+    #             for parameter in parameter_array[i][j]:
+    #                 if parameter != "Unsuccess":
+    #                     if parameter < current_result:
+    #                         current_result = parameter
+    #             if current_result == 9999999:
+    #                 current_result = 0
+    #         final_parameter_array[i][j] = current_result
+    # print("analysis 3 pre handle result")
+    # print(final_parameter_array)
+    # # 下载这个
+    # return final_parameter_array, algorithm_id_list, dataset_id_list
+    return parameter_array, algorithm_id_list, dataset_id_list, config_array
 
 
 #然后再遍历一遍，根据z平均值还是最小值，计算出final的array 然后返回
@@ -1211,17 +1271,25 @@ def pre_handle_accuracy_metrics_comparison(data, configs, traj_unsuccess_configs
 # 6 差不多
 # 7 类似3
 
-def generation_accuracy_metrics_comparison(data, suit_configs_list, folder_path, file_name, final_parameter_array, algorithm_id_list, dataset_id_list, config_id):
+def generation_accuracy_metrics_comparison(data, suit_configs_list, folder_path, file_name, final_parameter_array, algorithm_id_list, dataset_id_list, config_id, config_array_3):
     # 现在有了一个二维数组，要计算每个algorithm的均值和std
     mean_list = []
     std_list = []
     algorithm_name_list = []
     dataset_name_list = []
     for i in range(len(algorithm_id_list)):
-        mean_list.append(np.mean(final_parameter_array[i]))
-        std_list.append(np.std(final_parameter_array[i]))
+        
+        current_values = []
+        for j in range(len(dataset_id_list)):
+            for k in range(len(final_parameter_array[i][j])):
+                
+                for l in range(len(final_parameter_array[i][j][k])):
+                    # print(len(final_parameter_array[i][j][k]))
+                    current_values.append(final_parameter_array[i][j][k][l])
+        mean_list.append(np.mean(current_values))
+        std_list.append(np.std(current_values))
     
-
+    # print("(((((((((((())))))))))))")
     
     # 绘制箱线图
     # 示例数据
@@ -1288,11 +1356,24 @@ def generation_accuracy_metrics_comparison(data, suit_configs_list, folder_path,
         writer = csv.writer(file)
         
         # 写入第一行（包含数据集ID）
-        writer.writerow([data['evaluation_form']['3_accuracy_metrics_comparison']['metric']] + dataset_name_list)
+        writer.writerow(["Mapping Task ID", "Config ID", "algorithm", "dataset", data['evaluation_form']['3_accuracy_metrics_comparison']['metric']])
         
-        # 写入每一行（包含算法ID和对应的数据）
-        for alg_id, row in zip(algorithm_name_list, final_parameter_array):
-            writer.writerow([alg_id] + row)
+        for i in range(len(algorithm_id_list)):
+            current_values = []
+            for j in range(len(dataset_id_list)):
+                for k in range(len(final_parameter_array[i][j])):
+                    config = config_array_3[i][j][k]
+                    for l in range(len(final_parameter_array[i][j][k])):
+                        # 每一个task写入一行
+                        task_id = config.mappingTasks[l].id
+                        config_id = config.id
+                        algo_name = config.algorithm.imageTag
+                        dataset_name = config.dataset.name
+                        writer.writerow([task_id, config_id, algo_name, dataset_name, final_parameter_array[i][j][k][l]])
+
+        # # 写入每一行（包含算法ID和对应的数据）
+        # for alg_id, row in zip(algorithm_name_list, final_parameter_array):
+        #     writer.writerow([alg_id] + row)
 
 def generation_usage_comparison(data, suit_configs_list, folder_path, file_name):
     csv_files = []
@@ -1370,7 +1451,7 @@ def generation_usage_comparison(data, suit_configs_list, folder_path, file_name)
 
     plt.close()
 
-def pre_handle_scatter(data, final_config_list, flag, x_type, y_type):
+def pre_handle_scatter(data, final_config_id_list, flag, x_type, y_type):
     # 预处理数据
     # 0 accuracy
     # 1 performance
@@ -1399,7 +1480,7 @@ def pre_handle_scatter(data, final_config_list, flag, x_type, y_type):
             return False
 
         if parameter_check != "lxztsl":
-            for config in final_config_list:
+            for config in final_config_id_list:
                 parameters = config.paramValues
                 parameter_keys = []
                 for parameter in parameters:
@@ -1410,9 +1491,66 @@ def pre_handle_scatter(data, final_config_list, flag, x_type, y_type):
 
     # 如果有parameter的话 每个config都有这个parameter
     return True
-    
 
-def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj_unsuccess_configs_id_list,  extend_threshold,extend_multiple):
+
+# 输入两个列表
+
+def save_2d_scatter_raw_data(x_axis, x_list, y_axis, y_list, save_path, raw_data):
+    # 检查 x_list 和 y_list 的长度是否一致
+    if len(x_list) != len(y_list):
+        raise ValueError("x_list and y_list must have the same length")
+    
+    # 创建 DataFrame
+    data = {"config id": raw_data["config id"],"task id": raw_data["task id"], "algo name": raw_data["algo name"], "dataset name": raw_data["dataset name"],x_axis: x_list, y_axis: y_list}
+    df = pd.DataFrame(data)
+    
+    # 保存到指定路径
+    df.to_csv(save_path, index=False)
+    print(f"Data saved to {save_path}")
+
+def save_3d_scatter_raw_data(x_axis, x_list, y_axis, y_list, z_axis, z_list, save_path, raw_data):
+    # 检查 x_list, y_list 和 z_list 的长度是否一致
+    if len(x_list) != len(y_list) or len(y_list) != len(z_list):
+        raise ValueError("x_list, y_list, and z_list must have the same length")
+    
+    # 创建 DataFrame
+    data = {"config id": raw_data["config id"],"task id": raw_data["task id"], "algo name": raw_data["algo name"], "dataset name": raw_data["dataset name"],x_axis: x_list, y_axis: y_list, z_axis: z_list}
+    df = pd.DataFrame(data)
+    
+    # 保存到指定路径
+    df.to_csv(save_path, index=False)
+    print(f"Data saved to {save_path}")
+
+def update_raw_other_data(config):
+    config_id = config.id
+    task_id = config.mappingTasks[0].id
+    algo_name = config.algorithm.imageTag
+    dataset_name = config.dataset.name
+    return config_id, task_id, algo_name, dataset_name
+
+def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj_unsuccess_configs_id_list,  extend_threshold,extend_multiple, filter_traj_config_id_list):
+    
+    import matplotlib as mpl
+    from matplotlib import font_manager
+
+
+    # 加载DejaVuSans字体
+    font_path = font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
+    dejavusans = [f for f in font_path if 'DejaVuSans.ttf' in f][0]
+    font_prop = font_manager.FontProperties(fname=dejavusans, size=12)  # 小四相当于12号字体
+
+    mpl1 = mpl.rcParams['pdf.fonttype']
+    mpl2 = mpl.rcParams['ps.fonttype']
+    mpl3 = mpl.rcParams['font.family']
+    mpl4 = 16
+
+    # 设置全局字体属性
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
+    mpl.rcParams['font.family'] = font_prop.get_name()
+    mpl.rcParams['font.size'] = 48  # 小四字体
+
+    
     old_suit_configs_list = suit_configs_list
     suit_configs_list = []
     for conf in old_suit_configs_list:
@@ -1469,7 +1607,11 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
         y_unit = "(Hz)"
 
 
-    
+    # 如果y轴不是ate or rpe的话，就不管filter了
+    if "ate" not in y_axis and "rpe" not in y_axis:
+        filter_traj_config_id_list = []
+    if "ate" in x_axis or "rpe" in x_axis:
+        filter_traj_config_id_list = []
 
     algorithm_id_dict = {}
     for config in suit_configs_list:
@@ -1485,7 +1627,22 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
             dataset_id_dict.update({config.dataset.name: [config]})
         else:
             dataset_id_dict[config.dataset.name].append(config)
+    
+    # filter一定是之前没有过的！！！
+    for id in filter_traj_config_id_list:
+        config = MappingTaskConfig.query.get(id)
+        # 给config分类
+        if config.algorithm.imageTag not in algorithm_id_dict.keys():
+            algorithm_id_dict.update({config.algorithm.imageTag: [config]})
+        else:
+            algorithm_id_dict[config.algorithm.imageTag].append(config)
 
+    for id in filter_traj_config_id_list:
+        config = MappingTaskConfig.query.get(id)
+        if config.dataset.name not in dataset_id_dict.keys():
+            dataset_id_dict.update({config.dataset.name: [config]})
+        else:
+            dataset_id_dict[config.dataset.name].append(config)
 
     # 首先判断group中的config -- algo：任意都可以（但是貌似不是同一个算法意义不大）;dataset: 相同
 
@@ -1494,7 +1651,14 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
     diagram_data.update({y_axis: []})
     diagram_data.update({"category": []})
 
-    # 反过来 TODO
+    raw_data = {}
+    raw_data.update({"config id": []})
+    raw_data.update({"task id": []})
+    raw_data.update({"algo name": []})
+    raw_data.update({"dataset name": []})
+
+
+    max_y = -99999
     for key, value in dataset_id_dict.items(): # algorithm_id_dict.items():
         # 生成一个color
         # 其他dataset的color以这个为中心
@@ -1515,10 +1679,15 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
                 y_v = 0
                 # category = key + "  " + dkey
                 category = dkey + "  " + key
-                evoResults = config.mappingTasks[0].evaluation.evoResults
+                # print("--", config.mappingTasks[0].id)
+
+                if config.id not in filter_traj_config_id_list:
+                    evoResults = config.mappingTasks[0].evaluation.evoResults
                 performanceresults = config.mappingTasks[0].performanceresults
 
-                print(x_axis, y_axis)
+                # print(x_axis, y_axis)
+
+                # 如果x轴是ate or rpe 就不会有filter traj了             
 
                 if x_axis == 'ate_rmse':
                     x_v = evoResults.ate_rmse
@@ -1561,63 +1730,81 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
                             x_v = float(paramValue.value)
                             break
 
-                if y_axis == 'ate_rmse':
-                    y_v = evoResults.ate_rmse
-                elif y_axis == 'ate_mean':
-                    y_v = evoResults.ate_mean
-                elif y_axis == 'ate_median':
-                    y_v = evoResults.ate_median
-                elif y_axis == 'ate_std':
-                    y_v = evoResults.ate_std
-                elif y_axis == 'ate_min':
-                    y_v = evoResults.ate_min
-                elif y_axis == 'ate_max':
-                    y_v = evoResults.ate_max
-                elif y_axis == 'ate_sse':
-                    y_v = evoResults.ate_sse
-                elif y_axis == 'rpe_mean':
-                    y_v = evoResults.rpe_mean
-                elif y_axis == 'rpe_median':
-                    y_v = evoResults.rpe_median
-                elif y_axis == 'rpe_std':
-                    y_v = evoResults.rpe_std
-                elif y_axis == 'rpe_min':
-                    y_v = evoResults.rpe_min
-                elif y_axis == 'rpe_max':
-                    y_v = evoResults.rpe_max
-                elif y_axis == 'rpe_sse':
-                    y_v = evoResults.rpe_sse
-                elif y_axis == 'rpe_rmse':
-                    y_v = evoResults.rpe_rmse
-                elif y_axis == 'cpu_max':
-                    y_v = performanceresults.max_cpu
-                elif y_axis == 'cpu_mean':
-                    y_v = performanceresults.mean_cpu
-                elif y_axis == 'ram_max':
-                    y_v = performanceresults.max_ram
+                if config.id in filter_traj_config_id_list:
+                    y_v = -1
                 else:
-                    # parameter
-                    for paramValue in config.paramValues:
-                        if y_axis == paramValue.name:
-                            y_v = float(paramValue.value)
-                            break        
 
+                    if y_axis == 'ate_rmse':
+                        y_v = evoResults.ate_rmse
+                    elif y_axis == 'ate_mean':
+                        y_v = evoResults.ate_mean
+                    elif y_axis == 'ate_median':
+                        y_v = evoResults.ate_median
+                    elif y_axis == 'ate_std':
+                        y_v = evoResults.ate_std
+                    elif y_axis == 'ate_min':
+                        y_v = evoResults.ate_min
+                    elif y_axis == 'ate_max':
+                        y_v = evoResults.ate_max
+                    elif y_axis == 'ate_sse':
+                        y_v = evoResults.ate_sse
+                    elif y_axis == 'rpe_mean':
+                        y_v = evoResults.rpe_mean
+                    elif y_axis == 'rpe_median':
+                        y_v = evoResults.rpe_median
+                    elif y_axis == 'rpe_std':
+                        y_v = evoResults.rpe_std
+                    elif y_axis == 'rpe_min':
+                        y_v = evoResults.rpe_min
+                    elif y_axis == 'rpe_max':
+                        y_v = evoResults.rpe_max
+                    elif y_axis == 'rpe_sse':
+                        y_v = evoResults.rpe_sse
+                    elif y_axis == 'rpe_rmse':
+                        y_v = evoResults.rpe_rmse
+                    elif y_axis == 'cpu_max':
+                        y_v = performanceresults.max_cpu
+                    elif y_axis == 'cpu_mean':
+                        y_v = performanceresults.mean_cpu
+                    elif y_axis == 'ram_max':
+                        y_v = performanceresults.max_ram
+                    else:
+                        # parameter
+                        for paramValue in config.paramValues:
+                            if y_axis == paramValue.name:
+                                y_v = float(paramValue.value)
+                                break        
+
+                max_y = max(max_y, y_v)
 
                 # diagram_data.append([x_v, y_v, key])
                 diagram_data[x_axis].append(x_v)
                 diagram_data[y_axis].append(y_v)
                 diagram_data['category'].append(category)
 
-    print(diagram_data)
-    # diagram_data = np.array(diagram_data)
-    # print(diagram_data)
-    # sns.set(color_codes=True)
-    # mean, cov = [0.5, 1], [(1, .5),(.5, 1)]#设置均值(一组参数)和协方差（两组参数）
-    # data = np.random.multivariate_normal(mean, cov, 200)
-    # print(type(data))
+                config_id, task_id, algo_name, dataset_name = update_raw_other_data(config)
+                raw_data["config id"].append(config_id)
+                raw_data["task id"].append(task_id)
+                raw_data["algo name"].append(algo_name)
+                raw_data["dataset name"].append(dataset_name)
+
+    # 用max_y更新所有的filter
+    # print(type(raw_data["config id"][0]), type(filter_traj_config_id_list[0]))
+    for i in range(len(diagram_data[y_axis])):
+        if raw_data["config id"][i] in filter_traj_config_id_list:
+            diagram_data[y_axis][i] = 1.2 * max_y
+    # 后面都一样了
+
+
+    temp_name = "2d_raw_data_x-" + x_axis + "_y-" + y_axis+".csv"
+    # 还有mapping task or config ID
+    save_2d_scatter_raw_data(x_axis, diagram_data[x_axis], y_axis, diagram_data[y_axis], folder_path + temp_name, raw_data)
+
+    # ln_numbers = [math.log(y) for y in diagram_data[y_axis]]
+    # diagram_data[y_axis] = ln_numbers
+
+
     df = pd.DataFrame(diagram_data)#, columns=[x_axis, y_axis])
-    # print(type(df))
-    # print(df.head())
 
     for i in range(2):
     ## TODO 为什么第一个表格 没有背景线
@@ -1644,9 +1831,9 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
                 color_dict[f"{a}  {b}"] = sub_palette[j*5 + 4]  
 
         # 绘制散点图
-        fig, ax = plt.subplots(figsize=(22, 8))
+        fig, ax = plt.subplots(figsize=(22, 14.1))
 
-        fig, ax = plt.subplots(figsize=(22, 8))
+        fig, ax = plt.subplots(figsize=(22, 14.1))
 
         sns.set(style="whitegrid")
 
@@ -1716,7 +1903,6 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
 
     ret = get_Extend_accuracy(old_suit_configs_list, suit_configs_list, Extend_axis, Extend_attribute, extend_threshold,extend_multiple)
     # 应该要返回3个列表的列表，每个列表里有新的数据（列表里面的元素是字典）
-    print(1)
 
     algorithm_id_dict = {}
     for config in old_suit_configs_list:
@@ -1725,7 +1911,7 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
             algorithm_id_dict.update({config.algorithm.imageTag: [config]})
         else:
             algorithm_id_dict[config.algorithm.imageTag].append(config)
-    print(1)
+
     dataset_id_dict = {}
     for config in old_suit_configs_list:
         if config.dataset.name not in dataset_id_dict.keys():
@@ -1733,7 +1919,7 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
         else:
             dataset_id_dict[config.dataset.name].append(config)
 
-    print(1)
+
 
     old_diagram_data = diagram_data
 
@@ -1742,12 +1928,15 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
     diagram_data.update({y_axis: []})
     diagram_data.update({"category": []})
 
-
+    raw_data = {}
+    raw_data.update({"config id": []})
+    raw_data.update({"task id": []})
+    raw_data.update({"algo name": []})
+    raw_data.update({"dataset name": []})
     for key, value in dataset_id_dict.items(): # algorithm_id_dict.items():
         # 生成一个color
         # 其他dataset的color以这个为中心
         for dkey, dvalue in algorithm_id_dict.items(): # dataset_id_dict.items():
-            print(1)
             for config in value:
                 # 这个config必须在dvalue中
                 flag = False
@@ -1813,8 +2002,20 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
                 diagram_data[x_axis].append(x_v)
                 diagram_data[y_axis].append(y_v)
                 diagram_data['category'].append(category)
+                
+                config_id, task_id, algo_name, dataset_name = update_raw_other_data(config)
+                raw_data["config id"].append(config_id)
+                raw_data["task id"].append(task_id)
+                raw_data["algo name"].append(algo_name)
+                raw_data["dataset name"].append(dataset_name)
 
     
+    temp_name = "Extend_2d_raw_data_x-" + x_axis + "_y-" + y_axis+".csv"
+    save_2d_scatter_raw_data(x_axis, diagram_data[x_axis], y_axis, diagram_data[y_axis], folder_path + temp_name, raw_data)
+    
+    # ln_numbers = [math.log(y) for y in diagram_data[y_axis]]
+    # diagram_data[y_axis] = ln_numbers
+
 
     df = pd.DataFrame(diagram_data)#, columns=[x_axis, y_axis])
     
@@ -1834,7 +2035,7 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
             color_dict[f"{a}  {b}"] = sub_palette[j*5 + 4]  
 
     # 绘制散点图
-    fig, ax = plt.subplots(figsize=(22, 8))
+    fig, ax = plt.subplots(figsize=(22, 16))
 
     sns.set(style="whitegrid")
 
@@ -1902,7 +2103,7 @@ def generation_scatter(data, suit_configs_list,folder_path, file_name,flag, traj
     # 在线选择那里也加上（如果某个轴上有ate或者rpe的话）
 
 
-def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, traj_unsuccess_configs_id_list, extend_threshold,extend_multiple):
+def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, traj_unsuccess_configs_id_list, extend_threshold,extend_multiple, filter_traj_config_id_list):
     old_suit_configs_list = suit_configs_list
     suit_configs_list = []
     for conf in old_suit_configs_list:
@@ -1961,6 +2162,14 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
     # 增加分类条件：
     # algorithm + dataset
 
+    # 如果y轴不是ate or rpe的话，就不管filter了
+    if "ate" not in z_axis and "rpe" not in z_axis:
+        filter_traj_config_id_list = []
+    if "ate" in x_axis or "rpe" in x_axis:
+        filter_traj_config_id_list = []
+    if "ate" in y_axis or "rpe" in y_axis:
+        filter_traj_config_id_list = []
+
     algorithm_id_dict = {}
     for config in suit_configs_list:
         # 给config分类
@@ -1976,6 +2185,21 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
         else:
             dataset_id_dict[config.dataset.name].append(config)
 
+    # filter一定是之前没有过的！！！
+    for id in filter_traj_config_id_list:
+        config = MappingTaskConfig.query.get(id)
+        # 给config分类
+        if config.algorithm.imageTag not in algorithm_id_dict.keys():
+            algorithm_id_dict.update({config.algorithm.imageTag: [config]})
+        else:
+            algorithm_id_dict[config.algorithm.imageTag].append(config)
+
+    for id in filter_traj_config_id_list:
+        config = MappingTaskConfig.query.get(id)
+        if config.dataset.name not in dataset_id_dict.keys():
+            dataset_id_dict.update({config.dataset.name: [config]})
+        else:
+            dataset_id_dict[config.dataset.name].append(config)
 
 
 
@@ -1987,8 +2211,13 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
     diagram_data.update({z_axis: []})
     diagram_data.update({"category": []})
 
-
+    raw_data = {}
+    raw_data.update({"config id": []})
+    raw_data.update({"task id": []})
+    raw_data.update({"algo name": []})
+    raw_data.update({"dataset name": []})
     # 这里o重新遍历 每次遍历设置一个新的color
+    max_z = -99999
     for key, value in dataset_id_dict.items(): # algorithm_id_dict.items():
         # 生成一个color
         # 其他dataset的color以这个为中心
@@ -2009,7 +2238,8 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
                 y_v = 0
                 # category = key + "  " + dkey
                 category = dkey + "  " + key
-                evoResults = config.mappingTasks[0].evaluation.evoResults
+                if config.id not in filter_traj_config_id_list:
+                    evoResults = config.mappingTasks[0].evaluation.evoResults
                 performanceresults = config.mappingTasks[0].performanceresults
 
                 print(x_axis, y_axis)
@@ -2096,51 +2326,78 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
                             y_v = float(paramValue.value)
                             break        
 
-                if z_axis == 'ate_rmse':
-                    z_v = evoResults.ate_rmse
-                elif z_axis == 'ate_mean':
-                    z_v = evoResults.ate_mean
-                elif z_axis == 'ate_median':
-                    z_v = evoResults.ate_median
-                elif z_axis == 'ate_std':
-                    z_v = evoResults.ate_std
-                elif z_axis == 'ate_min':
-                    z_v = evoResults.ate_min
-                elif z_axis == 'ate_max':
-                    z_v = evoResults.ate_max
-                elif z_axis == 'ate_sse':
-                    z_v = evoResults.ate_sse
-                elif z_axis == 'rpe_mean':
-                    z_v = evoResults.rpe_mean
-                elif z_axis == 'rpe_median':
-                    z_v = evoResults.rpe_median
-                elif z_axis == 'rpe_std':
-                    z_v = evoResults.rpe_std
-                elif z_axis == 'rpe_min':
-                    z_v = evoResults.rpe_min
-                elif z_axis == 'rpe_max':
-                    z_v = evoResults.rpe_max
-                elif z_axis == 'rpe_sse':
-                    z_v = evoResults.rpe_sse
-                elif z_axis == 'rpe_rmse':
-                    z_v = evoResults.rpe_rmse
-                elif z_axis == 'cpu_max':
-                    z_v = performanceresults.max_cpu
-                elif z_axis == 'cpu_mean':
-                    z_v = performanceresults.mean_cpu
-                elif z_axis == 'ram_max':
-                    z_v = performanceresults.max_ram
+
+                if config.id in filter_traj_config_id_list:
+                    z_v = -1
                 else:
-                    # parameter
-                    for paramValue in config.paramValues:
-                        if z_axis == paramValue.name:
-                            z_v = float(paramValue.value)
-                            break    
+
+
+                    if z_axis == 'ate_rmse':
+                        z_v = evoResults.ate_rmse
+                    elif z_axis == 'ate_mean':
+                        z_v = evoResults.ate_mean
+                    elif z_axis == 'ate_median':
+                        z_v = evoResults.ate_median
+                    elif z_axis == 'ate_std':
+                        z_v = evoResults.ate_std
+                    elif z_axis == 'ate_min':
+                        z_v = evoResults.ate_min
+                    elif z_axis == 'ate_max':
+                        z_v = evoResults.ate_max
+                    elif z_axis == 'ate_sse':
+                        z_v = evoResults.ate_sse
+                    elif z_axis == 'rpe_mean':
+                        z_v = evoResults.rpe_mean
+                    elif z_axis == 'rpe_median':
+                        z_v = evoResults.rpe_median
+                    elif z_axis == 'rpe_std':
+                        z_v = evoResults.rpe_std
+                    elif z_axis == 'rpe_min':
+                        z_v = evoResults.rpe_min
+                    elif z_axis == 'rpe_max':
+                        z_v = evoResults.rpe_max
+                    elif z_axis == 'rpe_sse':
+                        z_v = evoResults.rpe_sse
+                    elif z_axis == 'rpe_rmse':
+                        z_v = evoResults.rpe_rmse
+                    elif z_axis == 'cpu_max':
+                        z_v = performanceresults.max_cpu
+                    elif z_axis == 'cpu_mean':
+                        z_v = performanceresults.mean_cpu
+                    elif z_axis == 'ram_max':
+                        z_v = performanceresults.max_ram
+                    else:
+                        # parameter
+                        for paramValue in config.paramValues:
+                            if z_axis == paramValue.name:
+                                z_v = float(paramValue.value)
+                                break    
+                
+                max_z = max(max_z, z_v)
                 # diagram_data.append([x_v, y_v, key])
                 diagram_data[x_axis].append(x_v)
                 diagram_data[y_axis].append(y_v)
                 diagram_data[z_axis].append(z_v)
                 diagram_data['category'].append(category)
+                
+                config_id, task_id, algo_name, dataset_name = update_raw_other_data(config)
+                raw_data["config id"].append(config_id)
+                raw_data["task id"].append(task_id)
+                raw_data["algo name"].append(algo_name)
+                raw_data["dataset name"].append(dataset_name)
+
+
+    # 用max_y更新所有的filter
+    for i in range(len(diagram_data[z_axis])):
+        if raw_data["config id"][i] in filter_traj_config_id_list:
+            diagram_data[z_axis][i] = 1.2 * max_z
+    # 后面都一样了
+
+    # ln_numbers = [math.log(z) for z in diagram_data[z_axis]]
+    # diagram_data[z_axis] = ln_numbers
+    
+    temp_name = "3d_raw_data_x-" + x_axis + "_y-" + y_axis+ "_z-" + z_axis +".csv"
+    save_3d_scatter_raw_data(x_axis, diagram_data[x_axis], y_axis, diagram_data[y_axis],z_axis, diagram_data[z_axis], folder_path + temp_name, raw_data)
 
     print(diagram_data)
     df = pd.DataFrame(diagram_data)#, columns=[x_axis, y_axis])
@@ -2263,7 +2520,11 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
     diagram_data.update({y_axis: []})
     diagram_data.update({z_axis: []})
     diagram_data.update({"category": []})
-
+    raw_data = {}
+    raw_data.update({"config id": []})
+    raw_data.update({"task id": []})
+    raw_data.update({"algo name": []})
+    raw_data.update({"dataset name": []})
 
     # 这里o重新遍历 每次遍历设置一个新的color
     for key, value in dataset_id_dict.items(): # algorithm_id_dict.items():
@@ -2347,6 +2608,14 @@ def generation_3d_scatter(data, suit_configs_list,folder_path, file_name,flag, t
                 diagram_data[z_axis].append(z_v)
                 diagram_data['category'].append(category)
 
+                config_id, task_id, algo_name, dataset_name = update_raw_other_data(config)
+                raw_data["config id"].append(config_id)
+                raw_data["task id"].append(task_id)
+                raw_data["algo name"].append(algo_name)
+                raw_data["dataset name"].append(dataset_name)
+
+    temp_name = "Extend_3d_raw_data_x-" + x_axis + "_y-" + y_axis+ "_z-" + z_axis +".csv"
+    save_3d_scatter_raw_data(x_axis, diagram_data[x_axis], y_axis, diagram_data[y_axis],z_axis, diagram_data[z_axis], folder_path + temp_name, raw_data)
     print(diagram_data)
     df = pd.DataFrame(diagram_data)#, columns=[x_axis, y_axis])
     # plt.figure(figsize=(10, 8))
@@ -2476,45 +2745,49 @@ def get_Extend_accuracy(old_suit_configs_list ,suit_configs_list, Extend_axis, E
             task_traj_file_path = "/slam_hive_results/mapping_results/" + str(task.id) + "/traj.txt"
             groundtruth_file_path = "/slam_hive_datasets/" + config.dataset.name + "/groundtruth.txt"
             
-            groundtruth_start_timestamp = 0
-            groundtruth_end_timestamp = 0
-            task_traj_start_timestamp = 0
-            task_traj_end_timestamp = 0
+            # groundtruth_start_timestamp = 0
+            # groundtruth_end_timestamp = 0
+            # task_traj_start_timestamp = 0
+            # task_traj_end_timestamp = 0
 
-            if groundtruth_file_path not in dataset_file_content:
-                # 读取文件
-                with open(groundtruth_file_path, "r") as file:
-                    lines = file.readlines()
-                    start_timestamp = float(lines[0].split()[0])
-                    end_timestamp = float(lines[-1].split()[0])
+            # if groundtruth_file_path not in dataset_file_content:
+            #     # 读取文件
+            #     with open(groundtruth_file_path, "r") as file:
+            #         lines = file.readlines()
+            #         start_timestamp = float(lines[0].split()[0])
+            #         end_timestamp = float(lines[-1].split()[0])
                     
-                    dataset_file_content.update({groundtruth_file_path: [start_timestamp, end_timestamp]})
+            #         dataset_file_content.update({groundtruth_file_path: [start_timestamp, end_timestamp]})
 
-                    groundtruth_start_timestamp = start_timestamp
-                    groundtruth_end_timestamp = end_timestamp
-            else :
-                groundtruth_start_timestamp = dataset_file_content[groundtruth_file_path][0]
-                groundtruth_end_timestamp = dataset_file_content[groundtruth_file_path][1]
+            #         groundtruth_start_timestamp = start_timestamp
+            #         groundtruth_end_timestamp = end_timestamp
+            # else :
+            #     groundtruth_start_timestamp = dataset_file_content[groundtruth_file_path][0]
+            #     groundtruth_end_timestamp = dataset_file_content[groundtruth_file_path][1]
             
 
-            # 然后对origin value进行处理
+            # # 然后对origin value进行处理
 
-            thredhold_value = 0
+            # thredhold_value = 0
 
-            # 首先判断是否是unsuccess的
-            if task.trajectory_state == "Unsuccess": 
-                task_traj_start_timestamp = groundtruth_start_timestamp
-                task_traj_end_timestamp = groundtruth_start_timestamp
-                thredhold_value = 0
-            elif task.trajectory_state == "Success":
-                # 读取文件
-                with open(task_traj_file_path, "r") as file:
-                    lines = file.readlines()
-                    task_traj_start_timestamp = float(lines[0].split()[0])
-                    task_traj_end_timestamp = float(lines[-1].split()[0])
-                    thredhold_value = (task_traj_end_timestamp - task_traj_start_timestamp) / (groundtruth_end_timestamp - groundtruth_start_timestamp)
-
+            # # 首先判断是否是unsuccess的
+            # if task.trajectory_state == "Unsuccess": 
+            #     task_traj_start_timestamp = groundtruth_start_timestamp
+            #     task_traj_end_timestamp = groundtruth_start_timestamp
+            #     thredhold_value = 0
+            # elif task.trajectory_state == "Success":
+            #     # 读取文件
+            #     with open(task_traj_file_path, "r") as file:
+            #         try:
+            #             lines = file.readlines()
+            #             task_traj_start_timestamp = float(lines[0].split()[0])
+            #             task_traj_end_timestamp = float(lines[-1].split()[0])
+            #             thredhold_value = (task_traj_end_timestamp - task_traj_start_timestamp) / (groundtruth_end_timestamp - groundtruth_start_timestamp)
+            #         except Exception as e:
+            #             thredhold_value = 0.0
             # 现在获取了4个时间戳，然后根据输入的信息，判断新的值
+
+            thredhold_value = task.traj_length
             
             # 判断要获取哪个值
             origin_value = 0

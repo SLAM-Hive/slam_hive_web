@@ -62,11 +62,25 @@
                     <textarea id="eval2" rows="2" class="value" cols="100" placeholder="input the id: [id1, id2. ...]"></textarea>
                 </td>
             </tr>  
+            <tr>
+                <td >
+                    <div style="text-align:left;">
+                        <a class="button" href="{{ url_for('create_evaluate_remain')}}">
+                            <input class='btn btn-default btn-sm' type="submit" value="Create Evo Evaluation ③"
+                            onclick="return confirm('Are you sure?');">
+                        </a> 
+                    </div>
+                </td>
+                <td >Create evaluations for all mapping tasks that haven't been evaluated.</td>
+                <td>
+                    
+                </td>
+            </tr>  
     </tbody>
 </table>        
 
 <br>
-<h4>Create EvoEvaluation ②</h4>
+<h4>Create Evo Multi Evaluation ②</h4>
 
 <table class="table table-bordered" sytle="border-collapse: collapse;" >
     <tbody>    

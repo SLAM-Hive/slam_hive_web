@@ -41,6 +41,7 @@
             </div>
         </div>
         <div><h5>Current mappingtask id: <b style="color: #000;">{{mappingtask.id}}</b></h5></div>
+        {% if check_evaluation == True%}
         <div><h5>evaluation task id: <b style="color: #000;">{{mappingtask.evaluation.id}}</b></h5>
             <div class="btn-group" role="group">
                 <a class="button" href="{{ url_for('show_evaluate', id=mappingtask.evaluation.id) }}">
@@ -49,6 +50,9 @@
                 &nbsp;&nbsp;
             </div>
         </div>
+        {% else %}
+        <div> <h5>No evaluation task now.</h5> </div>
+        {% endif %}
         <br>
         <br>
         
@@ -59,6 +63,11 @@
                 <input class="btn btn-primary" type="submit" value="Download mapping task results" style="background-color:rgb(74, 153, 226)" >
             </a>
         </div>
+
+        <br>
+        
+        <div><h5>CPU Type: <b style="color: #000;">{{mappingtask.CPU_type}}</b></h5></div>
+        <div><h5>CPU cores: <b style="color: #000;">{{mappingtask.CPU_cores}}</b> </h5></div>
         <br>
         <table class="table table-bordered">
             <caption>Algorithm parameters</caption>

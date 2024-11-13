@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Xinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -149,6 +149,10 @@ class MappingTask(db.Model):
     time = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     description = db.Column(db.Text, nullable=True) 
     trajectory_state = db.Column(db.String(32), default="Running") # Success, Unsuccess 
+    CPU_type = db.Column(db.String(100))
+    CPU_cores = db.Column(db.Integer)
+    # new for trajectory lenght
+    traj_length = db.Column(db.Float)
     
     mappingTaskConf_id = db.Column(db.Integer, db.ForeignKey('mappingtaskconfig.id'))
     mappingTaskConf = db.relationship('MappingTaskConfig', back_populates='mappingTasks', lazy=True)

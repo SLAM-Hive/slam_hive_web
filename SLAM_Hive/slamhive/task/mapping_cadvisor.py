@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Xinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -501,7 +501,7 @@ def mapping_task(configName, mappingtaskID):
             shutil.rmtree(local_datasetPath_change_new)
         print("leave mapping_cadvisor")
 
-
+#  cluster version
 def mapping_task_single(configName, mappingtaskID):
 
     container_number = 1
@@ -862,7 +862,7 @@ def mapping_task_batch_aliyun_test():
         required_esc_number = 2,
         task_signal = "batch999",
         batch_task_id = 999,
-        work_node_image_id = "m-8vbgm940ya8e778gic5g",    
+        WORK_NODE_IMAGE_ID = "m-8vbgm940ya8e778gic5g",    
     )
 
     #     # create a new config to assign the task
@@ -908,7 +908,7 @@ def mapping_task_batch_aliyun(mappingtaskIdList, container_number, batchMappingT
         required_esc_number = container_number,
         task_signal = task_signal,
         batch_task_id = batchMappingTask_id,
-        work_node_image_id = app.config['work_node_image_id'],
+        WORK_NODE_IMAGE_ID = app.config['WORK_NODE_IMAGE_ID'],
         final_node_template = final_node_template, 
         final_config_node = final_config_node, 
         final_task_node = final_task_node, 
@@ -1100,7 +1100,7 @@ def mapping_task_batch_aliyun(mappingtaskIdList, container_number, batchMappingT
     )
     time.sleep(5)
 
-
+# abort
 def mapping_task_combination(configName, mappingtaskID, container_number):
     localConfigPaths = []
     # for now_number in range(container_number):
@@ -1334,7 +1334,7 @@ def mapping_task_combination(configName, mappingtaskID, container_number):
 
 
 
-
+# abort
 ## new function 3.21
 ## show the k8s running info of different sub task
 def check_combination_task_running_k8s(id):

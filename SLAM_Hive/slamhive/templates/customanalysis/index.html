@@ -28,31 +28,31 @@
     </style>
     <a href="https://slam-hive.net/wiki/customanalysis" class="floating-button"  target="_blank">Wiki Link</a>
     
-    
-    <div>
-        <h4>Create new Custom Analysis Task</h4>
-    </div>
-    <table class="table table-bordered" sytle="border-collapse: collapse;" >
-        <thead>
-            <tr>
-                <th>Button</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>    
+    {% if NO_USE_ANALYSIS == "no"%}
+        <div>
+            <h4>Create new Custom Analysis Task</h4>
+        </div>
+        <table class="table table-bordered" sytle="border-collapse: collapse;" >
+            <thead>
                 <tr>
-                    <td >
-                        <div style="text-align:left;">
-                            <a class="button" href="{{ url_for('create_analysis_group') }}" >
-                                <input class="btn btn-primary" type="submit" value="Create Group" >
-                            </a>
-                        </div>
-                    </td>
-                    <td >Create a Custom Analysis task. You can input your yaml file and we will create related analysis results for you.</td>
-                </tr>  
-        </tbody>
-    </table>
-
+                    <th>Button</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>    
+                    <tr>
+                        <td >
+                            <div style="text-align:left;">
+                                <a class="button" href="{{ url_for('create_analysis_group') }}" >
+                                    <input class="btn btn-primary" type="submit" value="Create Analysis" >
+                                </a>
+                            </div>
+                        </td>
+                        <td >Create a Custom Analysis task. You can input your yaml file and we will create related analysis results for you.</td>
+                    </tr>  
+            </tbody>
+        </table>
+    {%endif%}
 
     <br>
     <div>
@@ -343,7 +343,6 @@
     
 
   
-
 
 
 

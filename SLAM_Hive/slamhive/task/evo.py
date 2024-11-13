@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Xinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,20 +49,19 @@ def evo_task_batch(trajFolder, datasetName, evoId, mappingtaskIdList):
     SLAM_HIVE_PATH = "/SLAM-Hive"
     print("SLAM_HIVE_PATH= " + SLAM_HIVE_PATH)
     # 同时创建一个comparison task
-
+    
     trajPaths = []
 
     # 获取trajFolder下的所有子目录的名称
     ## temp_trajPath = "/clusternfs/home/Combination_result/slam_hive_results/mapping_results/" + trajFolder
     root_trajPath = "/SLAM-Hive/slam_hive_results/mapping_results"
+    print("evo number", evo_number)
     for now_number in range(evo_number):
         trajPaths.append(os.path.join(root_trajPath, mappingtaskIdList[now_number], "traj.txt"))
-    
     groundtruths = []
     root_groundtruth = "/SLAM-Hive/slam_hive_datasets"
     for now_number in range(evo_number):
         groundtruths.append(os.path.join("/SLAM-Hive/slam_hive_datasets", datasetName[now_number], 'groundtruth.txt'))
-
     resultPaths = []
     root_resultPath = "/SLAM-Hive/slam_hive_results/evaluation_results"
 

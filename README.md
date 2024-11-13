@@ -7,13 +7,24 @@ Workstation version. You can do some simple mappping running and evaluation.
 ## 1. Install Docker
 Install Docker and docker-compose: <https://www.docker.com>
 
-## 2. Create derectory
+## 2. Create directory
+
+The path structure of the entire project should be:
+```
+  - SLAM-Hive
+    - slam_hive_algorithm
+    - slam_hive_dataset
+    - slam_hive_results
+    - slam_hive_web
+    - slam_hive_controller 
+```
+
 ``` shell
 $ cd /
 $ mkdir SLAM-Hive
 $ cd /SLAM-Hive
 $ git clone https://github.com/SLAM-Hive/slam_hive_results.git
-$ git clone slam_hive_controller # TO CHANGE
+$ git clone https://github.com/SLAM-Hive/slam_hive_controller.git # TO CHANGE
 ```
 
 ## 3. Build SLAM algorithm images
@@ -78,9 +89,9 @@ Before build, you should change some configurations in some files.
 $ cd /SLAM-Hive/slam_hive_web/SLAM_Hive/slamhive
 
 # __init__.py
-# set: app.config['CURRENT_VERSION'] = 'workstation'
+# set: app.config['CURRENT_VERSION'] = 'workstation' # version: workstation; view-only
 # settings.py
-# set HOST = 'mysql_ip' # version: workstation; view-only
+# set HOST = 'mysql_ip' 
 ```
 ```
 $ cd SLAM_Hive/slam_hive_web
@@ -91,6 +102,12 @@ Then,open your browser and visit: <http://127.0.0.1:5000>
 
 We default to mounting the path in the image to a local path, which facilitates secondary development of the code. You can also first build an image of slam hive web locally, and then use the local image directly at startup.
 
+And if you want to use dataset pre-process, you should also build the slam_hive_controller Docker Image:
+``` shell
+cd SLAM_Hive/slam_hive_controller/Module_B
+docker build -t module_b:xxx . # xxx should be same as app.config['CLUSTER_CONTROLLER_IMAGE_NAME']
+
+```
 ## 6. Create tasks
 Ensure you have installed correspoding images and downloaded the dataset before creating tasks.
 ### 6.1 Create mapping tasks
@@ -249,12 +266,15 @@ input the command getting at 2.2.1.
 
 If you want to use `kubectl` in work nodes: copy the /etc/kubernetes/admin.conf from master node to the same directory of the work nodes.
 
+### 2.4 cAdvisor on work node
+You should also create a cAdvisor docker container for each work node for usage monitor.
+
 
 ## 3. Create Root Directory
 same as `Workstation` version.
 
 ## 4. Build SLAM algorithm images
-same as `Workstation` version.
+same as `Workstation` version. Besides, you should also zip the algorithm docker image to raleted folder using command: `docker save slam-hive-algorithm:xxx1 > /SLAM-Hive/slam_hive_algos/xxx1`
 
 ## 5. Download datasets
 same as `Workstation` version.
@@ -356,12 +376,12 @@ $ vim __init__.py
 # set: app.config['CURRENT_VERSION'] = 'aliyun'
 # set: app.config['MASTER_REGION'] = `Region where your master node are at`
 # set: app.config['MASTER_IP'] = `Master node pubic network IP`
-# set: app.config['work_node_image_id'] = "work node initialize image"
+# set: app.config['WORK_NODE_IMAGE_ID'] = "work node initialize image"
 # TODO 需要设置一下共享镜像
 # set: app.config['MASTER_INNER_IP'] = "Master node inner IP"
 
 $ kubeadm token create --ttl 0 --print-join-command
-# set: app.config["kubernetes_join_command"] = `join command`
+# set: app.config["KUBERNETES_JOIN_COMMAND"] = `join command`
 ```
 ``` shell
 $ cd SLAM_Hive/slam_hive_web

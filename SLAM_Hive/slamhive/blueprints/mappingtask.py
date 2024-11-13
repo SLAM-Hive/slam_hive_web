@@ -1,5 +1,5 @@
 # This is part of SLAM Hive
-# Copyright (C) 2024 Zinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
+# Copyright (C) 2024 Xinzhe Liu, Yuanyuan Yang, Bowen Xu, Sören Schwertfeger, ShanghaiTech University. 
 
 # SLAM Hive is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@ from flask_apscheduler import APScheduler
 import zipfile
 
 import json, yaml, os, uuid, time
+import subprocess
+import numpy as np
 
 executor = ThreadPoolExecutor(10)
 scheduler = APScheduler()
@@ -49,6 +51,126 @@ scheduler.start()
 #     else : 
 #         print('[MappingTask ID '+str(mappingtaskID)+'] is running...')
 
+def calculate_traj_len(task_id):
+    
+    # 首先判断轨迹是否成功
+    traj_flag_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(task_id) ,"traj_flag.txt")
+    with open(traj_flag_path, 'r') as f:
+        text = f.read()
+        if text == "True": # （至少有轨迹文件，且轨迹内容不为空）
+            pass
+        else :
+            return 0.0
+    # 起码是有traj文件的且不为空
+    # 通过task id 获取dataset路径
+    mappingtask = MappingTask.query.get(task_id)
+    dataset_name = mappingtask.mappingTaskConf.dataset.name
+    groundtruth_file_path = os.path.join(app.config['DATASETS_PATH'], dataset_name,"groundtruth.txt")
+    task_traj_file_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(task_id) ,"traj.txt")
+    print(groundtruth_file_path)
+    print(task_traj_file_path)
+
+    
+    groundtruth_start_timestamp = 0
+    groundtruth_end_timestamp = 0
+    task_traj_start_timestamp = 0
+    task_traj_end_timestamp = 0
+
+        # 读取文件
+    with open(groundtruth_file_path, "r") as file:
+        lines = file.readlines()
+        # 首先找到第一个不是注释的行
+        first_line_id = -1
+        for i in range(len(lines)):
+            if lines[i][0] != "#":
+                first_line_id = i
+                break
+        if first_line_id == -1:
+            return 0.0 # groundtruth格式错误
+
+        last_line_id = -1
+        for i in range(len(lines)):
+            j = len(lines) - i - 1
+            if lines[j][0] != "#":
+                last_line_id = j
+                break
+        # 如果能找到lastid，至少是和firstid 同一行  
+        print(first_line_id)
+        print(last_line_id)      
+        
+        try:
+            groundtruth_start_timestamp = float(lines[first_line_id].split()[0])
+            groundtruth_end_timestamp = float(lines[last_line_id].split()[0])
+            print(groundtruth_start_timestamp, groundtruth_end_timestamp)
+        except Exception as e:
+            print("groundtruth file error")
+            return 0.0
+
+    with open(task_traj_file_path, "r") as file:
+        try:
+            lines = file.readlines()
+            first_line_id = -1
+            for i in range(len(lines)):
+                if lines[i][0] != "#":
+                    first_line_id = i
+                    break
+            if first_line_id == -1:
+                return 0.0 # groundtruth格式错误
+
+            last_line_id = -1
+            for i in range(len(lines)):
+                j = len(lines) - i - 1
+                if lines[j][0] != "#":
+                    last_line_id = j
+                    break
+            # 如果能找到lastid，至少是和firstid 同一行  
+            print(first_line_id)
+            print(last_line_id)  
+
+            # 对结果进行分段
+            timestamps = []
+            for i in range(last_line_id - first_line_id + 1):
+                j = first_line_id + i
+                timestamp = float(lines[j].split()[0])
+                timestamps.append(timestamp)
+            timestamps = np.array(timestamps)
+
+            # 计算时间差
+            time_diffs = np.diff(timestamps)
+
+            # 设定动态分段的时间差阈值 (例如，时间差的90%分位数)
+            threshold = 30 # np.percentile(time_diffs, 99)
+            print("threshold",threshold)
+
+            # 初始化分段
+            segments = []
+            current_segment_ids = [0]  # 用于存储当前段的ID，从第一个数据点的ID 0 开始
+            # 遍历数据，根据时间差动态分段
+            for i in range(1, len(timestamps)):
+                if time_diffs[i - 1] > threshold:
+                    # 时间差超过阈值，将当前段的ID存储并开始新的段
+                    segments.append(current_segment_ids)
+                    current_segment_ids = [i]
+                else:
+                    # 否则，将ID添加到当前段
+                    current_segment_ids.append(i)
+            # 添加最后一个段的ID
+            segments.append(current_segment_ids)
+            total_time = 0.0
+            for idx, segment_ids in enumerate(segments, start=1):
+                print(f"Segment {idx} IDs:", segment_ids)
+                total_time += timestamps[segment_ids[len(segment_ids) - 1]] - timestamps[segment_ids[0]]
+            
+
+            print(total_time)
+            len_rate = total_time / (groundtruth_end_timestamp - groundtruth_start_timestamp)
+        except Exception as e:
+            print("task result traj error")
+            return 0.0
+    
+    return len_rate
+
+
 def CheckTask(mappingtaskID):
     mappingtask = MappingTask.query.get(mappingtaskID)
     finished_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID)+"/finished")
@@ -57,8 +179,6 @@ def CheckTask(mappingtaskID):
         mappingtask.state = "Finished"
 
         traj_flag_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID) ,"traj_flag.txt")
-        if not os.path.exists(traj_flag_path):
-            return
         with open(traj_flag_path, 'r') as f:
             text = f.read()
             if text == "True":
@@ -79,9 +199,17 @@ def CheckTask(mappingtaskID):
         db.session.add(sub_performanceresults)
         # mappingtask.performanceresults.append(sub_performanceresults)
         mappingtask.performanceresults = sub_performanceresults
+        
+        
+        # trajectory length
+        # print("type of mappingtask ID----------------------------:", type(mappingtaskID))
+        # print(type(mappingtask.id)) # 看看类型是否相同
+        len_rate = calculate_traj_len(mappingtaskID)
+        mappingtask.traj_length = len_rate
+
+        
         db.session.commit()
 
-        db.session.commit()
         print('[MappingTask ID: '+str(mappingtaskID)+'] finished!')
         scheduler.remove_job(str(mappingtaskID))
         #push state to the frontend
@@ -104,6 +232,16 @@ def CheckTask_single(mappingtaskID):
             else :
                 mappingtask.trajectory_state = "Unsuccess"
 
+            # 同时读取cpu文件
+            cpu_info_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID) ,"cpu_info.txt")
+            # 
+            with open(cpu_info_path, 'r') as f:
+                text = f.read()
+                CPU_type = text.split("\n")[0].split(":")[1]
+                CPU_cores = text.split("\n")[1].split(":")[1]
+                # 写入数据库中
+                mappingtask.CPU_type = CPU_type
+                mappingtask.CPU_cores = CPU_cores
 
             # add performance data to mysql
         usage_info = extract_usage_info_single(mappingtaskID)
@@ -114,12 +252,16 @@ def CheckTask_single(mappingtaskID):
             mean_cpu = usage_info['mean_cpu'],
             max_ram = usage_info['max_ram']
         )
+
         db.session.add(sub_performanceresults)
         # mappingtask.performanceresults.append(sub_performanceresults)
         mappingtask.performanceresults = sub_performanceresults
-        db.session.commit()
+
+        # lenght rate
+        mappingtask.traj_length = calculate_traj_len(mappingtaskID)
 
         db.session.commit()
+
         print('[MappingTask ID: '+str(mappingtaskID)+'] finished!')
         scheduler.remove_job(str(mappingtaskID))
         #push state to the frontend
@@ -153,6 +295,19 @@ def CheckTask_batch(batchmappingtaskId, mappingtaskIdList, container_number):
                 else :
                     mappingtask_list[now_number].trajectory_state = "Unsuccess"
 
+
+            # 同时读取cpu文件
+            cpu_info_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtask_list[now_number].id) ,"cpu_info.txt")
+            # 
+            with open(cpu_info_path, 'r') as f:
+                text = f.read()
+                CPU_type = text.split("\n")[0].split(":")[1]
+                CPU_cores = text.split("\n")[1].split(":")[1]
+                # 写入数据库中
+                mappingtask_list[now_number].CPU_type = CPU_type
+                mappingtask_list[now_number].CPU_cores = CPU_cores
+
+
             sub_performanceresults = PerformanceResults(
                 mappingTask_id = mappingtaskIdList[now_number],
                 max_cpu = usage_info['max_cpu'],
@@ -163,7 +318,12 @@ def CheckTask_batch(batchmappingtaskId, mappingtaskIdList, container_number):
             # mappingtask_list[now_number].performanceresults.append(sub_performanceresults)
             mappingtask_list[now_number].performanceresults = sub_performanceresults
             # mappingtask.performanceresults = sub_performanceresults
+
+            mappingtask_list[now_number].traj_length = calculate_traj_len(mappingtask_list[now_number].id)
+
             db.session.commit()
+
+
             print(" --- task " + str(mappingtask_list[now_number].id) + " finished!")
 
 
@@ -328,8 +488,25 @@ def create_mappingtask(id):
     description = config.description
     state = 'Running'#To do: Check if the container is running
     time = datetime.now().replace(microsecond=0)
+
+    cmd = "cat /proc/cpuinfo | grep 'model name' | sort | uniq | awk -F '[:]' '{print $2}'"
+    result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    # 去除结果字符串前后的空白字符（包括换行符）
+    cleaned_result = result.stdout.strip()
+    # 存储结果到变量
+    CPU_type = cleaned_result
+    cmd = "cat /proc/cpuinfo | grep flags | grep ' lm ' | wc -l"
+    result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    cleaned_result = result.stdout.strip()
+    try:
+        CPU_cores = int(cleaned_result)
+    except Exception as e:
+        CPU_cores = -1
     
-    mappingtask = MappingTask(description=description, state=state, time=time)
+
+
+    
+    mappingtask = MappingTask(description=description, state=state, time=time, CPU_cores = CPU_cores, CPU_type = CPU_type)
     db.session.add(mappingtask)
     config.mappingTasks.append(mappingtask)
     db.session.commit()
@@ -360,6 +537,19 @@ def create_mappingtask(id):
 ## mappingtask one in workstation fake
 @app.route('/mappingtask/create/fake/<int:id>', methods=['GET', 'POST'])
 def create_mappingtask_fake(id): 
+    
+    # # 遍历所有mapping task
+    # mappingtasks = MappingTask.query.order_by(MappingTask.id.desc()).all()
+    # for mappingtask in mappingtasks:
+    #     print("-----")
+    #     if mappingtask.trajectory_state == "Unsuccess":
+    #         mappingtask.traj_length = 0.0
+    #     else:
+    #         mappingtask.traj_length = calculate_traj_len(mappingtask.id)
+    # db.session.commit()
+
+    # return 
+
 
     version = app.config['CURRENT_VERSION']
     if version != 'workstation':
@@ -373,7 +563,24 @@ def create_mappingtask_fake(id):
     state = 'Running'#To do: Check if the container is running
     time = datetime.now().replace(microsecond=0)
     
-    mappingtask = MappingTask(description=description, state=state, time=time)
+    cmd = "cat /proc/cpuinfo | grep 'model name' | sort | uniq | awk -F '[:]' '{print $2}'"
+    result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    # 去除结果字符串前后的空白字符（包括换行符）
+    cleaned_result = result.stdout.strip()
+    # 存储结果到变量
+    CPU_type = cleaned_result
+    cmd = "cat /proc/cpuinfo | grep flags | grep ' lm ' | wc -l"
+    result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    cleaned_result = result.stdout.strip()
+    try:
+        CPU_cores = int(cleaned_result)
+    except Exception as e:
+        CPU_cores = -1
+    
+    
+    mappingtask = MappingTask(description=description, state=state, time=time, CPU_cores = CPU_cores, CPU_type = CPU_type)
+
+    
     db.session.add(mappingtask)
     config.mappingTasks.append(mappingtask)
     db.session.commit()
@@ -399,6 +606,7 @@ def create_mappingtask_fake(id):
     scheduler.add_job(id=str(mappingtask_id), func=CheckTask, args=[mappingtask_id], trigger="interval", seconds=3)
     return jsonify(result='success')
 
+
 ## mappingtask one in cluster
 @app.route('/mappingtask/create/single/<int:id>', methods=['GET', 'POST'])
 def create_single_mappingtask(id): 
@@ -417,8 +625,9 @@ def create_single_mappingtask(id):
     description = config.description
     state = 'Running'#To do: Check if the container is running
     time = datetime.now().replace(microsecond=0)
+       
     
-    mappingtask = MappingTask(description=description, state=state, time=time)
+    mappingtask = MappingTask(description=description, state=state, time=time, CPU_cores = CPU_cores, CPU_type = CPU_type)
     db.session.add(mappingtask)
     config.mappingTasks.append(mappingtask)
     db.session.commit()
@@ -461,7 +670,8 @@ def create_single_mappingtask_fake(id):
     state = 'Running'#To do: Check if the container is running
     time = datetime.now().replace(microsecond=0)
     
-    mappingtask = MappingTask(description=description, state=state, time=time)
+    
+    mappingtask = MappingTask(description=description, state=state, time=time, CPU_cores = CPU_cores, CPU_type = CPU_type)
     db.session.add(mappingtask)
     config.mappingTasks.append(mappingtask)
     db.session.commit()
@@ -527,8 +737,24 @@ def create_batch_mappingtask_workstation():
         state = 'Waiting'
         trajectory_state = 'Waiting'
         time = datetime.now().replace(microsecond=0)
+# cmd = "cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c"
+        cmd = "cat /proc/cpuinfo | grep 'model name' | sort | uniq | awk -F '[:]' '{print $2}'"
+        result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        # 去除结果字符串前后的空白字符（包括换行符）
+        cleaned_result = result.stdout.strip()
+        # 存储结果到变量
+        CPU_type = cleaned_result
+        cmd = "cat /proc/cpuinfo | grep flags | grep ' lm ' | wc -l"
+        result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        cleaned_result = result.stdout.strip()
+        try:
+            CPU_cores = int(cleaned_result)
+        except Exception as e:
+            CPU_cores = -1
     
-        mappingtask = MappingTask(description=description, state=state, time=time, trajectory_state = trajectory_state)
+    
+        mappingtask = MappingTask(description=description, state=state, time=time,trajectory_state = trajectory_state, CPU_cores = CPU_cores, CPU_type = CPU_type)
+
         db.session.add(mappingtask)
         config.mappingTasks.append(mappingtask)
         db.session.commit()
@@ -1080,10 +1306,12 @@ def create_batch_mappingtask_aliyun():
     # mappingtaskIdList = []
     # for i in range(task_number):
     #     mappingtaskIdList.append(999)
-    RunMapping_batch_aliyun(mappingtaskIdList, mappingtask_number, batchMappingTask_id, final_node_template, final_config_node, final_task_node, template_algo_dict, template_dataset_dict, template_number, node_number, aliyun_configuration)
+    # RunMapping_batch_aliyun(mappingtaskIdList, mappingtask_number, batchMappingTask_id, final_node_template, final_config_node, final_task_node, template_algo_dict, template_dataset_dict, template_number, node_number, aliyun_configuration)
+    
+    executor.submit(RunMapping_batch_aliyun, mappingtaskIdList, mappingtask_number, batchMappingTask_id, final_node_template, final_config_node, final_task_node, template_algo_dict, template_dataset_dict, template_number, node_number, aliyun_configuration)
     #s    
-    #scheduler.add_job(id = "batch" + str(batchMappingTask_id), func=CheckTask_batch, args=[batchMappingTask_id, mappingtaskIdList, mappingtask_number], trigger="interval", seconds=3)
-    #return redirect(url_for('index_mappingtask'))
+    scheduler.add_job(id = "batch" + str(batchMappingTask_id), func=CheckTask_batch, args=[batchMappingTask_id, mappingtaskIdList, mappingtask_number], trigger="interval", seconds=3)
+    return redirect(url_for('index_mappingtask'))
     #e  
     return 
 
@@ -1231,13 +1459,21 @@ def show_mappingtask(id):
     if os.path.exists(grid_path):
         grid_flag = True
 
+    # 需要判断是否进行了evaluation
+    check_evaluation = True
+    if mappingtask.evaluation is None:
+        check_evaluation = False
+
+
+
     return render_template('/mappingtask/show.html', config_dict = config_dict, 
                                                     mapping_usage_img_list=mapping_usage_img_list, 
                                                     usage_info=usage_info,
                                                     mappingtask = mappingtask,
                                                     config = config,
                                                     map_flag = map_flag,
-                                                    grid_flag = grid_flag
+                                                    grid_flag = grid_flag,
+                                                    check_evaluation = check_evaluation
                                                     )
 
 
