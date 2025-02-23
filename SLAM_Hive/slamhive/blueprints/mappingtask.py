@@ -1369,13 +1369,43 @@ def create_batch_mappingtask_aliyun():
 
 
 
+# @app.route('/mappingtask/index')
+# def index_mappingtask():
+#     form = DeleteMappingTaskForm()
+#     mappingtasks = MappingTask.query.order_by(MappingTask.id.desc()).all()
+#     algos = Algorithm.query.order_by(Algorithm.id.desc()).all()
+#     datasets = Dataset.query.order_by(Dataset.id.desc()).all()
+#     return render_template('/mappingtask/index.html', mappingtasks=mappingtasks, form=form, algos=algos, datasets=datasets, version=app.config['CURRENT_VERSION'])
+
 @app.route('/mappingtask/index')
 def index_mappingtask():
     form = DeleteMappingTaskForm()
-    mappingtasks = MappingTask.query.order_by(MappingTask.id.desc()).all()
+    
+    # 获取前端的页码参数，默认第一页
+    page = request.args.get('page', '1')  # 默认值改成字符串 '1'
+    try:
+        page = int(page)
+    except ValueError:
+        page = 1  # 如果转换失败（如 'NaN'），默认回到第一页
+    
+    per_page = 10  # 每页显示 10 个 config
+    total_configs = MappingTaskConfig.query.count()
+    total_tasks = MappingTask.query.count()  # 获取 task 总数
+    total_pages = int(total_tasks / per_page) if total_tasks % per_page == 0 else int(total_tasks / per_page) + 1  # 计算总页数
+    
+    # 分页获取 config
+    mappingtasks = (MappingTask.query
+               .order_by(MappingTask.id.desc())
+               .offset((page - 1) * per_page)
+               .limit(per_page)
+               .all())    
+    
+    
     algos = Algorithm.query.order_by(Algorithm.id.desc()).all()
     datasets = Dataset.query.order_by(Dataset.id.desc()).all()
-    return render_template('/mappingtask/index.html', mappingtasks=mappingtasks, form=form, algos=algos, datasets=datasets, version=app.config['CURRENT_VERSION'])
+    return render_template('/mappingtask/index.html', mappingtasks=mappingtasks, form=form, algos=algos, datasets=datasets, version=app.config['CURRENT_VERSION'], total_configs=total_configs, total_tasks = total_tasks,
+                           total_pages=total_pages, 
+                           current_page=page, )
 
 
 @app.route('/mappingtask/<int:id>/delete', methods=['POST'])

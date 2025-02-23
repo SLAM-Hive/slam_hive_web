@@ -484,8 +484,31 @@ def index_evaluate():
 @app.route('/eval/index/single')
 def index_evaluate_single():
     form = DeleteEvaluationForm()
-    evaluations = Evaluation.query.order_by(Evaluation.id.desc()).all()
-    return render_template('/evaluation/index_single.html', evaluations=evaluations, form=form,version=app.config['CURRENT_VERSION'])
+    # evaluations = Evaluation.query.order_by(Evaluation.id.desc()).all()
+
+        # 获取前端的页码参数，默认第一页
+    page = request.args.get('page', '1')  # 默认值改成字符串 '1'
+    try:
+        page = int(page)
+    except ValueError:
+        page = 1  # 如果转换失败（如 'NaN'），默认回到第一页
+    
+    per_page = 10  # 每页显示 10 个 config
+    total_evals = Evaluation.query.count()  # 获取 eval 总数
+    total_pages = int(total_evals / per_page) if total_evals % per_page == 0 else int(total_evals / per_page) + 1  # 计算总页数
+    
+    # 分页获取 config
+    evaluations = (Evaluation.query
+               .order_by(Evaluation.id.desc())
+               .offset((page - 1) * per_page)
+               .limit(per_page)
+               .all())
+
+
+    return render_template('/evaluation/index_single.html', evaluations=evaluations, form=form,version=app.config['CURRENT_VERSION'],
+                            total_evals=total_evals, 
+                           total_pages=total_pages, 
+                           current_page=page, )
 
 @app.route('/eval/index/multi')
 def index_evaluate_multi():

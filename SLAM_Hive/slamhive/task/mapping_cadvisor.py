@@ -1450,10 +1450,13 @@ def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localRe
             datasetPath:{'bind':'/slamhive/dataset','mode':'ro'},
             resultPath:{'bind':'/slamhive/result','mode':'rw'},
             configPath:{'bind':'/slamhive/config.yaml','mode':'ro'}}
-    algo = client.containers.run("slam-hive-algorithm:" + algoTag, command='/bin/bash', detach=True, tty=True, volumes=volume)
+    
+    algo = client.containers.run("slam-hive-algorithm:" + algoTag, command='/bin/bash', detach=True, tty=True, volumes=volume, network="host" ) # 让容器和本机共享网络)
+    
     print("================Running Task=================")
     # algo_exec = algo.exec_run('bash /slamhive/mappingtask.sh', tty=True, stream=True)
     # time.sleep(100000)
+    # algo.exec_run('sleep 1000000', tty=True, stream=True)
     algo_exec = algo.exec_run('python3 /slamhive/mapping.py', tty=True, stream=True)
 
 

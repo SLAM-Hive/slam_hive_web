@@ -433,10 +433,75 @@
         {% endfor %}     
     </div>
 
+    <div>
+        <span>Total Configs: <b>{{ total_configs }}</b> | Total Pages: <b id="total-pages">{{ total_pages }}</b>  | Current Page: <b id="current-page">{{ current_page }}</b></span>
+    </div>
+    
+    <div>
+        {% if current_page == 1 %}
+            First Page
+        {% else %}
+            <button id="prev-page">pre</button>
+        {% endif %}
+        <input type="number" id="page-input" min="1" max="{{ total_pages }}" value="{{ current_page }}">
+        
+        <button id="jump-page">jump</button>
+
+        {% if current_page == total_pages %}
+            Last Page
+        {% else %}
+            <button id="next-page">next</button>
+        {% endif %}
+    </div>
+
+
 {% endblock %}   
 
 {% block scripts %}    
     <script>
+
+$(document).ready(function() {
+        var totalPages = parseInt($("#total-pages").text());
+
+        function loadPage(page) {
+            // alert(page)
+            if (page < 1 || page > totalPages) {
+                alert("Please input valid number!");
+                return;
+            }
+            window.location.href = "/config/index?page=" + page;
+        }
+
+        $("#prev-page").click(function() {
+            var currentPage = parseInt($("#current-page").text());
+            loadPage(currentPage - 1);
+        });
+
+        $("#next-page").click(function() {
+            console.log($("#current-page").val())
+            var currentPage = parseInt($("#current-page").text());
+            loadPage(currentPage + 1);
+        });
+
+        $("#jump-page").click(function() {
+            var currentPage = parseInt($("#page-input").val());
+                    // 检查是否是有效数字
+            if (isNaN(currentPage)) {
+                alert("Please input valid number!");
+                return;
+            }
+            loadPage(currentPage);
+        });
+
+        // $("#page-input").on("keypress", function(e) {
+        //     if (e.which === 13) { // 按 Enter 键
+        //         var page = parseInt($(this).val());
+        //         loadPage(page);
+        //     }
+        // });
+    });
+
+
 
         function search(){
             algo_list = $('select[name="algo_id"]').val();
