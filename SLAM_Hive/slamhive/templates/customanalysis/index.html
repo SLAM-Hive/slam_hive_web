@@ -52,6 +52,15 @@
                     </tr>  
             </tbody>
         </table>
+
+        <br>
+        <div style="text-align:left;">
+            <a class="button" href="{{ url_for('download_custom_analysis_list') }}" download="custom_analysis_list.txt" >
+                <input class="btn btn-primary" type="submit" value="Download custom ayalysis list" style="background-color:rgb(74, 153, 226)" >
+            </a>
+            <p style="color: red;"> Note: If you don't get the analysis task ID after creating finish (maybe caused by brower difference), you can click to download all 'timestamp : group_name' to check your ID. </p>
+        </div>
+        <br>
     {%endif%}
 
     <br>
@@ -89,6 +98,9 @@
             </tbody>
         </table>
     </div> 
+    
+
+
     <div id="list">   
     </div>
 

@@ -316,6 +316,41 @@ def download_custom_analysis(id):
     zipDir(download_folder_path, download_zip_path)
     return send_from_directory("/slam_hive_results/custom_analysis_group", str(id) + ".zip", as_attachment=True)
 
+def extract_info_from_txt(file_path):
+    """读取 info.txt 文件并提取 id 和 name。"""
+    info_dict = {}
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            if line.startswith("id:"):
+                info_dict['id'] = line.split("id:")[1].strip()
+            elif line.startswith("name:"):
+                info_dict['name'] = line.split("name:")[1].strip()
+    return info_dict.get('id'), info_dict.get('name')
+@app.route('/analysis/download_custom_analysis_list')
+def download_custom_analysis_list():
+
+    """遍历目录下的所有文件夹，读取 info.txt，提取 id 和 name 并保存。"""
+    results = []
+    directory = "/slam_hive_results/custom_analysis_group"
+    output_file = "/slam_hive_results/custom_analysis_group/custom_analysis_list.txt"
+
+    for folder in os.listdir(directory):
+        folder_path = os.path.join(directory, folder)
+        if os.path.isdir(folder_path):  # 确保是文件夹
+            info_path = os.path.join(folder_path, "info.txt")
+            if os.path.exists(info_path):
+                id_value, name_value = extract_info_from_txt(info_path)
+                if id_value and name_value:
+                    results.append(f"{id_value} : {name_value}")
+    
+    # 保存到输出文件
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write("\n".join(results))
+    print(f"结果已保存到 {output_file}")
+
+
+    return send_from_directory("/slam_hive_results/custom_analysis_group","custom_analysis_list.txt", as_attachment=True)
+
 
 # for task5 6 traj success
 @app.route('/analysis/diagram/digt/show',methods=['GET','POST'])
