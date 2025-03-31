@@ -17,10 +17,12 @@ Here we offer some easy access to some important modeules in SLAM-Hive:
    - [parse custom analysis](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/task/custom_analysis_resolver.py)
 
 # Contents
+ - [How to add a new algorithm and dataset to SLAM-Hive and use them?](#4-add-new-algorithm-and-dataset); [Turorial](https://slam-hive.net/wiki/add_new_algorithm_and_dataset)
+
  - [How to install SLAM-Hive in workstation?](#1-deploy-in-workstation); [Turorial](https://slam-hive.net/wiki/workstation)
  - [How to install SLAM-Hive in cluster?](#2-deploy-in-cluster); [Turorial](https://slam-hive.net/wiki/cluster)
  - [How to install SLAM-Hive in Cloud?](#3-deploy-in-aliyun); [Turorial](https://slam-hive.net/wiki/cloud)
- - [How to add a new algorithm and dataset to SLAM-Hive and use them?](#4-add-new-algorithm-and-dataset); [Turorial](https://slam-hive.net/wiki/add_new_algorithm_and_dataset)
+
 
 # 1. Deploy in Workstation
 Workstation version. You can do some simple mappping running and evaluation.
