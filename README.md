@@ -2,6 +2,26 @@ More details see in <https://slam-hive.net/wiki>.
 
 Our Demo Website: <https://slam-hive.net>.
 
+# Modules
+
+Here we offer some easy access to some important modeules in SLAM-Hive:
+ - Web inferface
+   - [front end](https://github.com/SLAM-Hive/slam_hive_web/tree/main/SLAM_Hive/slamhive/templates)
+   - [back end](https://github.com/SLAM-Hive/slam_hive_web/tree/main/SLAM_Hive/slamhive/blueprints)
+   - [Functions that handle different tasks](https://github.com/SLAM-Hive/slam_hive_web/tree/main/SLAM_Hive/slamhive/task)
+ - Scrpts
+   - [Algorithm execution scripts](https://github.com/SLAM-Hive/orb-slam2-ros-mono/blob/master/slamhive/mapping.py)
+   - [Dataset play scripts](https://github.com/SLAM-Hive/slam_hive_datasets/blob/main/MH_01_easy/rosbag_play.py)
+   - [Data pre-processing scripts](https://github.com/SLAM-Hive/slam_hive_controller/blob/main/Module_B/project/dataset_preprocess.py)
+   - [parse multiple configurations](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/blueprints/utils.py)
+   - [parse custom analysis](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/task/custom_analysis_resolver.py)
+
+# Contents
+ - [How to install SLAM-Hive in workstation?](#1-deploy-in-workstation); [Turorial](https://slam-hive.net/wiki/workstation)
+ - [How to install SLAM-Hive in cluster?](#2-deploy-in-cluster); [Turorial](https://slam-hive.net/wiki/cluster)
+ - [How to install SLAM-Hive in Cloud?](#3-deploy-in-aliyun); [Turorial](https://slam-hive.net/wiki/cloud)
+ - [How to add a new algorithm and dataset to SLAM-Hive and use them?](#4-add-new-algorithm-and-dataset); [Turorial](https://slam-hive.net/wiki/add_new_algorithm_and_dataset)
+
 # 1. Deploy in Workstation
 Workstation version. You can do some simple mappping running and evaluation.
 ## 1. Install Docker
@@ -401,7 +421,10 @@ Then,open your browser and visit: <http://IP:5000>
 Same as workstation version, except you should input the aliyun server configuration.
 
 
-## 7. Licence
+# 4. Add new algorithm and dataset
+In wiki tutorial, we give a example of how to add a algorithm and dataset to SLAM-Hive and how to use them: https://slam-hive.net/wiki/add_new_algorithm_and_dataset
+
+# Licence
 The source code is released under [GPLv3](http://www.gnu.org/licenses/) license.
 
 We are still working on improving the code reliability. For any technical issues, you can make an issue.
