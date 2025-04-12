@@ -50,6 +50,7 @@ $ mkdir SLAM-Hive
 $ cd /SLAM-Hive
 $ git clone https://github.com/SLAM-Hive/slam_hive_results.git
 $ cd slam_hive_results & mkdir custom_analysis_group & mkdir multi_evaluation_results & mkdir batch_mappingtasks
+# download the Journal paper results from http://robotics.shanghaitech.edu.cn/static/datasets/SLAM-Hive/SLAM-Hive_archive.zip, and then move sub-folder to related position.
 $ git clone https://github.com/SLAM-Hive/slam_hive_controller.git # TO CHANGE
 ```
 
