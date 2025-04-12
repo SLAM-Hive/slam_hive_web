@@ -49,6 +49,7 @@ $ cd /
 $ mkdir SLAM-Hive
 $ cd /SLAM-Hive
 $ git clone https://github.com/SLAM-Hive/slam_hive_results.git
+$ cd slam_hive_results & mkdir custom_analysis_group
 $ git clone https://github.com/SLAM-Hive/slam_hive_controller.git # TO CHANGE
 ```
 
