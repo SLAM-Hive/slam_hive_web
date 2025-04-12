@@ -45,5 +45,5 @@ from flask import request, jsonify
 
 @app.route('/')
 def home():
-    return render_template('/home.html')
+    return render_template('/home.html', version=app.config["CURRENT_VERSION"])
 

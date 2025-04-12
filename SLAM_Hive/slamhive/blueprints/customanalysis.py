@@ -156,7 +156,7 @@ def index_customanalysis():
     
     NO_USE_ANALYSIS = app.config["NO_USE_ANALYSIS"]
 
-    return render_template('/customanalysis/index.html', group_dict = group_dict, length = len(group_dict['id']), NO_USE_ANALYSIS = NO_USE_ANALYSIS)
+    return render_template('/customanalysis/index.html', group_dict = group_dict, length = len(group_dict['id']), NO_USE_ANALYSIS = NO_USE_ANALYSIS, version=app.config["CURRENT_VERSION"])
 
 @app.route('/analysis/create', methods=['POST','GET'])
 def create_analysis_group():
