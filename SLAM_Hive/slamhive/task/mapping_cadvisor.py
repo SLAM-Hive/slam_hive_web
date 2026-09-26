@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from dateutil import parser
 from slamhive import app
 from slamhive.task.utils import *
+from slamhive.task.rosbag_conversion import prepare_dataset_for_mapping
 from pathlib import Path
 
 from kubernetes import client, config
@@ -462,8 +463,8 @@ def mapping_task(configName, mappingtaskID):
 
         # 判断是否需要预处理数据集
             # datasetPath = os.path.join('/SLAM-Hive-Test/SLAM-Hive/slam_hive_datasets', config_dict['slam-hive-dataset']) # 数据集的路径（主机下）
-        dataset_frequency = config_dict['dataset-frequency']
-        dataset_resolution = config_dict['dataset-resolution']
+        dataset_frequency = config_dict.get('dataset-frequency')
+        dataset_resolution = config_dict.get('dataset-resolution')
         dataset_check = False
 
         datasetPath = os.path.join('/SLAM-Hive/slam_hive_datasets', config_dict['slam-hive-dataset'])
@@ -487,6 +488,22 @@ def mapping_task(configName, mappingtaskID):
             #cnm 这里直接写个配置文件吧 然后写入 然后怪哉 然后读取
             container_dataset_preprocess(scriptsPath, algoTag, datasetPath, datasetPath_new, resultPath, configPath, localResultsPath, local_dataset_change_configPath, configName, "/slam_hive_datasets/" + config_dict['slam-hive-dataset'] + "_" + configName)
             datasetPath = datasetPath_new
+
+        prepared_dataset = prepare_dataset_for_mapping(
+            config_dict,
+            datasetPath,
+            resultPath,
+            logger=app.logger,
+        )
+        datasetPath = prepared_dataset.dataset_path
+        app.logger.info(
+            "ROS dataset preparation: status=%s algorithm_ros=%s dataset_ros=%s cache_key=%s manifest=%s",
+            prepared_dataset.status,
+            prepared_dataset.algorithm_ros,
+            prepared_dataset.dataset_ros,
+            prepared_dataset.cache_key,
+            prepared_dataset.manifest_path,
+        )
 
         print('scriptsPath: '+ scriptsPath)
         print('algoTag: '+ algoTag)

@@ -173,6 +173,11 @@ def calculate_traj_len(task_id):
 
 def CheckTask(mappingtaskID):
     mappingtask = MappingTask.query.get(mappingtaskID)
+    if mappingtask.state == "Failed":
+        job_id = str(mappingtaskID)
+        if scheduler.get_job(job_id) is not None:
+            scheduler.remove_job(job_id)
+        return
     finished_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID)+"/finished")
     if Path(finished_path).is_file():
         print(finished_path)
@@ -448,7 +453,22 @@ def RunMapping_batch_workstaion(configNameList, mappingtaskIDList):
 # 创建docker容器（修改成创建statefulset）
 # configPath：yaml文件的名称
 def RunMapping(configName, mappingtaskID):
-    mapping_cadvisor.mapping_task(configName, mappingtaskID)
+    try:
+        mapping_cadvisor.mapping_task(configName, mappingtaskID)
+    except Exception:
+        app.logger.exception("Mapping task %s failed before completion", mappingtaskID)
+        with app.app_context():
+            try:
+                db.session.rollback()
+                mappingtask = MappingTask.query.get(mappingtaskID)
+                if mappingtask is not None and mappingtask.state != "Finished":
+                    mappingtask.state = "Failed"
+                    mappingtask.trajectory_state = "Unsuccess"
+                    db.session.commit()
+            except Exception:
+                db.session.rollback()
+                app.logger.exception("Could not update failed mapping task %s", mappingtaskID)
+        raise
     print('The mapping task is done!')
 
 # 相比原来：增加了container_number参数

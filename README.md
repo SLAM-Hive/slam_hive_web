@@ -19,6 +19,8 @@ Here we offer some easy access to some important modeules in SLAM-Hive:
    - [parse multiple configurations](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/blueprints/utils.py)
    - [parse custom analysis](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/task/custom_analysis_resolver.py)
 
+For workstation mapping tasks, ROS1 and ROS2 bag format adaptation is handled automatically by the Web scheduler. See [ROS bag compatibility](docs/rosbag_compatibility.md) for supported directions and dataset layout.
+
 # Contents
  - [How to add a new algorithm and dataset to SLAM-Hive and use them?](#4-add-new-algorithm-and-dataset); [Turorial](https://slam-hive.net/wiki/add_new_algorithm_and_dataset)
 
