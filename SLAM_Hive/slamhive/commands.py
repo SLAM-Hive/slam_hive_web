@@ -28,3 +28,32 @@ def initdb(drop):
         click.echo('Drop tables.')
     db.create_all()
     click.echo('Initialized database.')
+
+
+# flask migrate-algorithm-ros-version
+@app.cli.command("migrate-algorithm-ros-version")
+def migrate_algorithm_ros_version():
+    """Add algorithm.rosVersion (ros1/ros2/other) and fill empty values from each image's ROS_DISTRO.
+
+    Idempotent. The scheduler plays datasets according to this field; new
+    algorithms set it on the registration page.
+    """
+    from sqlalchemy import inspect, text
+    from slamhive.task.ros_interop import image_ros_version
+
+    columns = {column["name"] for column in inspect(db.engine).get_columns("algorithm")}
+    if "rosVersion" not in columns:
+        db.session.execute(text("ALTER TABLE algorithm ADD COLUMN rosVersion VARCHAR(16) NULL"))
+        db.session.commit()
+        click.echo("Added column algorithm.rosVersion")
+    rows = db.session.execute(text(
+        "SELECT id, imageTag FROM algorithm WHERE rosVersion IS NULL OR rosVersion = ''")).fetchall()
+    for algo_id, image_tag in rows:
+        version = image_ros_version(image_tag)
+        if version is None:
+            click.echo("  {:<32} image slam-hive-algorithm:{} not found; set it on the Algorithm page".format(
+                image_tag, image_tag))
+            continue
+        db.session.execute(text("UPDATE algorithm SET rosVersion = :v WHERE id = :i"), {"v": version, "i": algo_id})
+        click.echo("  {:<32} {}".format(image_tag, version))
+    db.session.commit()

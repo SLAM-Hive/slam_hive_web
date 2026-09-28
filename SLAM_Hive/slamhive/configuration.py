@@ -15,6 +15,12 @@ MULTIEVALUATION_RESULTS_PATH = os.path.join(os.path.abspath('../..'), 'slam_hive
 
 
 BATCHMAPPINGTASK_PATH = os.path.join(os.path.abspath('../..'), 'slam_hive_results/batch_mappingtask')
+
+## Workstation algorithm containers
+# Each mapping task gets its own network namespace ("bridge") and its own
+# ROS_DOMAIN_ID, so concurrent ROS1 (roscore on 11311) and ROS2 (DDS discovery)
+# tasks cannot see each other. "host" restores the old shared host network.
+ALGO_CONTAINER_NETWORK = "bridge"
 ################
 ##   Cluster  ##
 ################
