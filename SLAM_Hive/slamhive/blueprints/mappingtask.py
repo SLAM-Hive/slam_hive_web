@@ -220,7 +220,7 @@ def CheckTask(mappingtaskID):
         if scheduler.get_job(job_id) is not None:
             scheduler.remove_job(job_id)
         return
-    
+
     finished_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID)+"/finished")
     print("########### [Now In CheckTask function] ###########")
     print(f"{datetime.now()} CheckTask: checking {finished_path}")
@@ -695,6 +695,7 @@ def create_mappingtask(id):
     config_dict = generate_config_dict(id)
     # add algo and dataset attribute
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -787,6 +788,7 @@ def create_mappingtask_fake(id):
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -834,6 +836,7 @@ def create_single_mappingtask(id):
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -878,6 +881,7 @@ def create_single_mappingtask_fake(id):
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -961,6 +965,7 @@ def create_batch_mappingtask_workstation():
         config_save_path = os.path.join(mapping_result_dir, config_filename)
         config_dict = generate_config_dict(mappingtaskconfigIdList[i])
         config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+        config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
         config_dict.update({"dataset-attribute": config.dataset.attribute})
         save_dict_to_yaml(config_dict, config_save_path)
 
@@ -1052,6 +1057,7 @@ def create_batch_mappingtask_cluster():
         config_save_path = os.path.join(mapping_result_dir, config_filename)
         config_dict = generate_config_dict(mappingtaskconfigIdList[i])
         config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+        config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
         config_dict.update({"dataset-attribute": config.dataset.attribute})
         save_dict_to_yaml(config_dict, config_save_path)
     batchMappingTask_subTask_path = os.path.join(batchMappingTask_path, "subTask.txt")
@@ -1242,6 +1248,7 @@ def create_batch_mappingtask_aliyun():
         config_save_path = os.path.join(mapping_result_dir, config_filename)
         config_dict = generate_config_dict(mappingtaskconfigIdList[i])
         config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+        config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
         config_dict.update({"dataset-attribute": config.dataset.attribute})
         save_dict_to_yaml(config_dict, config_save_path)
     #E

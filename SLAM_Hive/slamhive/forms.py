@@ -31,6 +31,9 @@ class NewAlgoForm(FlaskForm):
                 render_kw={'placeholder': 'For example: orb-slam2'})
     description = TextAreaField('Description', validators=[DataRequired()], render_kw={'rows':'5'})
     attribute = TextAreaField('Attribute', validators=[DataRequired()], render_kw={'rows':'5'})
+    rosVersion = SelectField('ROS version (datasets are played to the algorithm with this ROS version)',
+                             choices=[('ros1', 'ROS1'), ('ros2', 'ROS2'), ('other', 'Other (no ROS)')],
+                             validators=[DataRequired()])
     submit = SubmitField('Save')
     #slam-hive-algorithm:[imageTag], can't be repeated
     def validate_imageTag(self, field):

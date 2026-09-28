@@ -18,6 +18,7 @@ from flask import flash, redirect, url_for, render_template, request, jsonify, a
 from slamhive import app, db
 from slamhive.models import Algorithm, AlgoParameter
 from slamhive.forms import NewAlgoForm, DeleteAlgoForm, NewAlgoParameterForm, DeleteAlgoParameterForm
+from slamhive.task.ros_interop import image_ros_version
 
 
 @app.route('/algo/create', methods=['GET', 'POST'])
@@ -35,7 +36,17 @@ def create_algo():
         description = form.description.data
         className = form.className.data
         attribute = form.attribute.data
-        algo = Algorithm(imageTag=imageTag, dockerUrl=dockerUrl,description=description, className=className, attribute = attribute)
+        rosVersion = form.rosVersion.data
+        # 只做提示：以用户填写的为准，镜像里的 ROS_DISTRO 不一致时提醒一下
+        try:
+            image_version = image_ros_version(imageTag)
+        except Exception:
+            image_version = None
+        if image_version is not None and image_version != rosVersion:
+            flash('Note: image slam-hive-algorithm:{} looks like {} (ROS_DISTRO), but {} was selected.'.format(
+                imageTag, image_version, rosVersion))
+        algo = Algorithm(imageTag=imageTag, dockerUrl=dockerUrl,description=description, className=className, attribute = attribute,
+                         rosVersion=rosVersion)
         db.session.add(algo)
         db.session.commit()        
         flash('Your creation is saved!')

@@ -14,12 +14,12 @@ Here we offer some easy access to some important modeules in SLAM-Hive:
    - [Functions that handle different tasks](https://github.com/SLAM-Hive/slam_hive_web/tree/main/SLAM_Hive/slamhive/task)
  - Scrpts
    - [Algorithm execution scripts](https://github.com/SLAM-Hive/orb-slam2-ros-mono/blob/master/slamhive/mapping.py)
-   - [Dataset play scripts](https://github.com/SLAM-Hive/slam_hive_datasets/blob/main/MH_01_easy/rosbag_play.py)
+   - [Dataset playback manifest](https://github.com/SLAM-Hive/slam_hive_datasets/blob/main/MH_01_easy/slamhive_dataset.yaml)
    - [Data pre-processing scripts](https://github.com/SLAM-Hive/slam_hive_controller/blob/main/Module_B/project/dataset_preprocess.py)
    - [parse multiple configurations](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/blueprints/utils.py)
    - [parse custom analysis](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/task/custom_analysis_resolver.py)
 
-For workstation mapping tasks, ROS1 and ROS2 bag format adaptation is handled automatically by the Web scheduler. See [ROS bag compatibility](docs/rosbag_compatibility.md) for supported directions and dataset layout.
+For workstation mapping tasks, the Web scheduler plays every dataset to the algorithm in the algorithm's ROS version (ROS1 or ROS2) and converts bags when needed. See [Dataset playback and ROS1 / ROS2](docs/rosbag_compatibility.md).
 
 # Contents
  - [How to add a new algorithm and dataset to SLAM-Hive and use them?](#4-add-new-algorithm-and-dataset); [Turorial](https://slam-hive.net/wiki/add_new_algorithm_and_dataset)
@@ -129,6 +129,12 @@ $ docker-compose up
 ```
 Then,open your browser and visit: <http://127.0.0.1:5000>
 
+Once, build the bag conversion image and add the algorithm ROS version column to the database (it also fills the ROS version of the registered algorithms from their images):
+```
+$ docker build -t slam-hive-bagtools:1 /SLAM-Hive/slam_hive_web/bagtools
+$ docker exec slam_hive_web bash -c "cd /home/slam_hive_web/SLAM_Hive && FLASK_APP=slamhive flask migrate-algorithm-ros-version"
+```
+
 We default to mounting the path in the image to a local path, which facilitates secondary development of the code. You can also first build an image of slam hive web locally, and then use the local image directly at startup.
 
 And if you want to use dataset pre-process, you should also build the slam_hive_controller Docker Image:
@@ -170,7 +176,7 @@ Algorithm execution scripts include three file. You can create them refer to scr
 ##
 Step2: Add algorithm to web
 
-Click the "New" button on the Algorithm page, input the algorithm name, the name must be the same as the tag name of the image. Input your algorithm scripts url and description.
+Click the "New" button on the Algorithm page, input the algorithm name, the name must be the same as the tag name of the image. Choose the ROS version the algorithm runs with (`ros1`, `ros2` or `other`). Input your algorithm scripts url and description.
 ### 6.3.2 Create new dataset
 Step1: Provide your dataset and a script
 
@@ -178,7 +184,7 @@ Step1: Provide your dataset and a script
 | ----------- | ----------- |
 |`ROS bag`| Provide dataset in the form of ROS bag. |
 |`groundtruth.txt`| The groundtruth format must be: `tx ty tz qx qy qz qw`|
-|`rosbag_play.py`| This script generates the command of playing and remapping topics of the ROS bag. For details, please refer to `SLAM_Hive/slam_hive_datasets/<>/rosbag_play.py`|
+|`slamhive_dataset.yaml`| Describes the bags of the dataset and how they are played (bags, topics, rate, switches). The platform plays them in the algorithm's ROS version. For details, please refer to [docs/rosbag_compatibility.md](docs/rosbag_compatibility.md)|
 
 ##
 Step2: Add dataset to web

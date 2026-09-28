@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from dateutil import parser
 from slamhive import app
 from slamhive.task.utils import *
-from slamhive.task.rosbag_conversion import prepare_dataset_for_mapping
+from slamhive.task.ros_interop import prepare_dataset_for_mapping
 from pathlib import Path
 
 from kubernetes import client, config
@@ -495,6 +495,15 @@ def mapping_task(configName, mappingtaskID):
         skip_list = [config_dict['slam-hive-dataset'] + ".bag"]
 
         if dataset_frequency != None or dataset_resolution != None:
+            # module_b 只处理 <dataset>/<dataset>.bag（ROS1 rosbag API）；没有这个文件时它不会写 finished，
+            # 以前这里会无限等待。ROS2 数据集或其他命名的 bag 暂不支持 frequency/resolution 预处理。
+            preprocess_bag = os.path.join("/slam_hive_datasets", config_dict['slam-hive-dataset'],
+                                          config_dict['slam-hive-dataset'] + ".bag")
+            if not os.path.isfile(preprocess_bag):
+                raise RuntimeError(
+                    "dataset-frequency/dataset-resolution preprocessing needs the ROS1 bag {}; dataset {} has none "
+                    "(ROS2 bags and differently named bags are not supported by this step)".format(
+                        preprocess_bag, config_dict['slam-hive-dataset']))
             datasetPath_change = "/slamhive/dataset/" + config_dict['slam-hive-dataset']
             datasetPath_change_new = "/slamhive/dataset/" + config_dict['slam-hive-dataset'] + "_" + configName
             local_datasetPath_change_new = "/slam_hive_datasets/"  + config_dict['slam-hive-dataset'] + "_" + configName
@@ -513,6 +522,7 @@ def mapping_task(configName, mappingtaskID):
             config_dict,
             datasetPath,
             resultPath,
+            configPath,
             logger=app.logger,
         )
         datasetPath = prepared_dataset.dataset_path
@@ -532,7 +542,8 @@ def mapping_task(configName, mappingtaskID):
         app.logger.info(f"datasetPath: {datasetPath}")
         app.logger.info(f"resultPath: {resultPath}")
         app.logger.info(f"configPath: {configPath}")
-        container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID)
+        container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID,
+                  extra_volumes=prepared_dataset.extra_volumes, environment=prepared_dataset.environment)
 
         # 删除刚才创建的数据集，要不然内存占的太大了 ## 
         if dataset_frequency != None or dataset_resolution != None: 
@@ -1480,7 +1491,8 @@ def container_dataset_preprocess(scriptsPath, algoTag, datasetPath, datasetPath_
         raise RuntimeError("dataset preprocessing did not create {}".format(check_path))
     print("==================Changing dataset Finished====================")
 
-def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID):
+def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID,
+              extra_volumes=None, environment=None):
     # mount datasetPath, resultPath, configPath to image
     # Create Container
     import sys
@@ -1626,9 +1638,14 @@ def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localRe
             configPath: {'bind': '/slamhive/config.yaml', 'mode': 'ro'}
         }
         
+        # ROS interop mounts (source dataset, converted bag cache) come as
+        # "host:container:mode" strings.
+        volume = ["{}:{}:{}".format(host_path, info['bind'], info['mode']) for host_path, info in volume.items()]
+        volume += list(extra_volumes or [])
+
         app.logger.info("卷挂载配置:")
-        for host_path, mount_info in volume.items():
-            app.logger.info(f"  {host_path} -> {mount_info['bind']} ({mount_info['mode']})")
+        for mount in volume:
+            app.logger.info(f"  {mount}")
         
         # === 第5步：准备日志文件 ===
         app.logger.info("[STEP5]:准备日志文件...")
@@ -1668,12 +1685,17 @@ def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localRe
         )
         
         try:
+            # Own ROS_DOMAIN_ID per task (0 stays free for the host); 1..100.
+            task_environment = {"ROS_DOMAIN_ID": str(1 + int(mappingtaskID) % 100)}
+            task_environment.update(environment or {})
+            app.logger.info(f"容器环境变量: {task_environment}")
             run_kwargs = {
                 "command": "/bin/bash",
                 "detach": True,
                 "tty": True,
                 "volumes": volume,
-                "network": "host",
+                "environment": task_environment,
+                "network": app.config.get('ALGO_CONTAINER_NETWORK', 'bridge'),
                 "name": f"slam-task-{mappingtaskID}",
                 "remove": False,
                 "mem_limit": "16g",
