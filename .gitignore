@@ -1,1 +1,4 @@
 core
+
+# cAdvisor binary downloaded by cadvisor_local/Dockerfile
+cadvisor_local/cadvisor-v*-linux-amd64

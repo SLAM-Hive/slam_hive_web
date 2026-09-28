@@ -43,15 +43,32 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
 
 RUN apt-get update &&  apt -y install texlive-xetex
 
-#RUN curl -sSL https://get.daocloud.io/docker | sh
-RUN curl -sSL https://get.docker.com/ | sh
+RUN apt-get install -y apt-transport-https \
+    ca-certificates curl gnupg-agent software-properties-common 
 
+# Use Tsinghua mirror for Docker to avoid connection issues
+# Add retry logic and --fix-missing flag to handle network issues
+RUN curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu/gpg | apt-key add - && \
+    add-apt-repository "deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
 
+# Update package list with retry
+RUN apt-get update || (sleep 5 && apt-get update)
+
+# Install Docker components separately to handle partial failures
+RUN apt-get install -y --fix-missing containerd.io || \
+    (apt-get update && apt-get install -y --fix-missing containerd.io)
+
+RUN apt-get install -y --fix-missing docker-ce-cli docker-ce docker-compose-plugin
+
+# 配置Docker镜像加速
+# RUN mkdir -p /etc/docker && \
+#     echo '{"registry-mirrors": ["https://docker.m.daocloud.io"]}' > /etc/docker/daemon.json
 
 COPY . .
 
 #### add
 RUN ln  -s  /slam_hive_results/mapping_results/ /home/slam_hive_web/SLAM_Hive/slamhive/static/
 
-
-CMD ["flask", "run"]
+# 启动Flask应用，支持调试模式
+ENV FLASK_DEBUG 1
+CMD ["flask", "run", "--debugger"]
