@@ -24,7 +24,6 @@ from concurrent.futures import ThreadPoolExecutor
 #用来多线程评测同一个combination task中的不同sub task
 executor = ThreadPoolExecutor(10)
 
-
 def evo_task(trajFolder, datasetName, evoId):
     # trajPath = os.path.join(app.config['MAPPING_RESULTS_PATH'], trajFolder + '/traj.txt')
     # groundtruth = os.path.join(app.config['DATASETS_PATH'], datasetName + "/groundtruth.txt")
@@ -332,18 +331,18 @@ def evo_container_combination(trajPath, groundtruth, resultPath, evoId, now_numb
                     -as -v -r trans_part --plot_mode xyz \
                     --save_plot /slamhive/result/ape.pgf"',
                     tty=True, stream=True)
-        # evo_rpe tum reference.txt estimate.txt --pose_relation angle_deg --delta 1 --delta_unit m
+        # evo_rpe tum reference.txt estimate.txt --pose_relation angle_deg --delta 10 --delta_unit m
         evo_rpe = evo.exec_run('bash -c "evo_rpe tum \
                 /slamhive/groundtruth.tum \
                 /slamhive/traj.txt \
-                -as -v -r trans_part --plot_mode xyz --all_pairs -d 1 -u m \
+                -as -v -r trans_part --plot_mode xyz --all_pairs -d 10 -u m \
                 --save_plot /slamhive/result/rpe \
                 --save_result /slamhive/result/rpe.zip"',
                 tty=True, stream=True)
         evo_rpe_pgf = evo.exec_run('bash -c "evo_rpe tum \
                     /slamhive/groundtruth.tum \
                     /slamhive/traj.txt \
-                    -as -v -r trans_part --plot_mode xyz --all_pairs -d 1 -u m \
+                    -as -v -r trans_part --plot_mode xyz --all_pairs -d 10 -u m \
                     --save_plot /slamhive/result/rpe.pgf"',
                     tty=True, stream=True)
         total_completed_number = 0
@@ -374,74 +373,154 @@ def evo_container_combination(trajPath, groundtruth, resultPath, evoId, now_numb
         print("=========================EVO Task Finished!=====================")
 
 def evo_container(trajPath, groundtruth, resultPath):
-    client = docker.from_env()
-    print("===========Start Container: [slam-hive-evaluation:evo_latex]===========")
-    volume = {trajPath:{'bind':'/slamhive/traj.txt','mode':'ro'},
-            groundtruth:{'bind':'/slamhive/groundtruth.tum','mode':'ro'},
-            resultPath:{'bind':'/slamhive/result','mode':'rw'}}
-    evo = client.containers.run("slam-hive-evaluation:evo_latex", command='/bin/bash', detach=True, tty=True, volumes=volume)
+    from slamhive import app
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 开始创建EVO评估容器")
+    app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 参数: trajPath={trajPath}, groundtruth={groundtruth}, resultPath={resultPath}")
+    
+    try:
+        client = docker.from_env()
+        print("===========Start Container: [slam-hive-evaluation:evo]===========")
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 使用镜像: slam-hive-evaluation:evo")
+        
+        volume = {trajPath:{'bind':'/slamhive/traj.txt','mode':'ro'},
+                groundtruth:{'bind':'/slamhive/groundtruth.tum','mode':'ro'},
+                resultPath:{'bind':'/slamhive/result','mode':'rw'}}
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 卷挂载配置: {volume}")
+        
+        evo = client.containers.run("slam-hive-evaluation:evo", command='/bin/bash', detach=True, tty=True, volumes=volume)
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 容器创建成功，容器ID: {evo.short_id}")
 
-    print("========================Running EVO Task=========================")
-        # evo_config = evo.exec_run('bash -c "evo_config set plot_usetex') ## need to install other package
-    # evo.exec_run("cd /slamhive/result")
-    evo.exec_run('bash -c " evo_config set plot_seaborn_style darkgrid" ')
-    evo_traj = evo.exec_run('bash -c "evo_traj tum \
-            /slamhive/traj.txt \
-            --ref /slamhive/groundtruth.tum \
-            -as -v --full_check --plot_mode xyz \
-            --save_as_tum --save_plot /slamhive/result/traj"',
-            tty=True, stream=True)
-    evo_traj_pgf = evo.exec_run('bash -c "evo_traj tum \
+        print("========================Running EVO Task=========================")
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 开始执行EVO评估任务")
+        
+        # 配置EVO
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 配置EVO绘图样式")
+        evo.exec_run('bash -c " evo_config set plot_seaborn_style darkgrid" ')
+        
+        # 执行轨迹分析
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 执行轨迹分析 (evo_traj)")
+        evo_traj = evo.exec_run('bash -c "evo_traj tum \
                 /slamhive/traj.txt \
                 --ref /slamhive/groundtruth.tum \
                 -as -v --full_check --plot_mode xyz \
-                --save_plot /slamhive/result/traj.pgf"',
+                --save_as_tum --save_plot /slamhive/result/traj"',
                 tty=True, stream=True)
-    # command format reference-trajectory estimated-trajectory [options] 
-    evo_ape = evo.exec_run('bash -c "evo_ape tum \
-            /slamhive/groundtruth.tum \
-            /slamhive/traj.txt \
-            -as -v -r trans_part --plot_mode xyz \
-            --save_plot /slamhive/result/ape \
-            --save_result /slamhive/result/ape.zip"',
-            tty=True, stream=True)
-    evo_ape_pgf = evo.exec_run('bash -c "evo_ape tum \
+
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 执行轨迹分析PGF格式")
+        evo_traj_pgf = evo.exec_run('bash -c "evo_traj tum \
+                    /slamhive/traj.txt \
+                    --ref /slamhive/groundtruth.tum \
+                    -as -v --full_check --plot_mode xyz \
+                    --save_plot /slamhive/result/traj.pgf"',
+                    tty=True, stream=True)
+        
+        # 执行APE分析
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 执行APE分析 (绝对位姿误差)")
+        evo_ape = evo.exec_run('bash -c "evo_ape tum \
                 /slamhive/groundtruth.tum \
                 /slamhive/traj.txt \
                 -as -v -r trans_part --plot_mode xyz \
-                --save_plot /slamhive/result/ape.pgf"',
+                --save_plot /slamhive/result/ape \
+                --save_result /slamhive/result/ape.zip"',
                 tty=True, stream=True)
-    # evo_rpe tum reference.txt estimate.txt --pose_relation angle_deg --delta 1 --delta_unit m
-    evo_rpe = evo.exec_run('bash -c "evo_rpe tum \
-            /slamhive/groundtruth.tum \
-            /slamhive/traj.txt \
-            -as -v -r trans_part --plot_mode xyz --all_pairs -d 1 -u m \
-            --save_plot /slamhive/result/rpe \
-            --save_result /slamhive/result/rpe.zip"',
-            tty=True, stream=True)
-    evo_rpe_pgf = evo.exec_run('bash -c "evo_rpe tum \
+
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 执行APE分析PGF格式")
+        evo_ape_pgf = evo.exec_run('bash -c "evo_ape tum \
+                    /slamhive/groundtruth.tum \
+                    /slamhive/traj.txt \
+                    -as -v -r trans_part --plot_mode xyz \
+                    --save_plot /slamhive/result/ape.pgf"',
+                    tty=True, stream=True)
+        
+        # 执行RPE分析
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 执行RPE分析 (相对位姿误差)")
+        evo_rpe = evo.exec_run('bash -c "evo_rpe tum \
                 /slamhive/groundtruth.tum \
                 /slamhive/traj.txt \
-                -as -v -r trans_part --plot_mode xyz --all_pairs -d 1 -u m \
-                --save_plot /slamhive/result/rpe.pgf"',
+                -as -v -r trans_part --plot_mode xyz --all_pairs -d 10 -u m \
+                --save_plot /slamhive/result/rpe \
+                --save_result /slamhive/result/rpe.zip"',
                 tty=True, stream=True)
-    while True:
-        try:
-            # print(next(evo_traj).decode())
-            print(next(evo_traj).decode())
-            # next(play_exec)
-        except StopIteration:
-            break
+
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 执行RPE分析PGF格式")
+        evo_rpe_pgf = evo.exec_run('bash -c "evo_rpe tum \
+                    /slamhive/groundtruth.tum \
+                    /slamhive/traj.txt \
+                    -as -v -r trans_part --plot_mode xyz --all_pairs -d 10 -u m \
+                    --save_plot /slamhive/result/rpe.pgf"',
+                    tty=True, stream=True)
+        
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 所有EVO命令已提交")
+        
+    except Exception as e:
+        app.logger.error(f"[EVO容器-{thread_name}:{thread_id}] 创建或执行EVO容器时发生错误: {str(e)}", exc_info=True)
+        raise
+    
+    # 监控流式输出
+    app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 开始监控EVO任务执行输出")
+    
+    try:
+        while True:
+            try:
+                output_line = next(evo_traj.output).decode()
+                print(output_line)
+                app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] EVO输出: {output_line.strip()}")
+            except StopIteration:
+                app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] EVO轨迹分析完成")
+                break
+            except Exception as e:
+                app.logger.error(f"[EVO容器-{thread_name}:{thread_id}] 读取EVO输出时发生错误: {str(e)}")
+                break
+    except Exception as e:
+        app.logger.error(f"[EVO容器-{thread_name}:{thread_id}] 监控EVO输出时发生错误: {str(e)}", exc_info=True)
+    app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 等待EVO任务完全完成...")
     time.sleep(10)
-## ???????????????????????????????? 这个是为啥来着？？？？？？？？？？？？？？？？？？？？？？？？？？
-    evo.exec_run('cp /traj.tum /slamhive/result/traj.tum')
-    evo.exec_run('cp /groundtruth.tum /slamhive/result/groundtruth.tum')
-#     stop_evo = evo.exec_run('bash -c "source /opt/ros/noetic/setup.bash && rosnode kill -a"', tty=True, stream=True)
-    evo.exec_run('bash -c "touch /slamhive/result/finished"')
-    time.sleep(0.1)
-    evo.stop()
-    evo.remove()
-    print("=========================EVO Task Finished!=====================")
+    
+    try:
+        # 在 d=10m 且轨迹总里程较短时，evo_ape/evo_rpe 可能只生成局部结果文件，"
+        # 或都不生成，这会导致评估解析抛异常。补齐占位 zip 文件，避免将评估失败误判为映射失败。"
+        for metric, result_name in (("APE", "ape.zip"), ("RPE", "rpe.zip")):
+            exists = evo.exec_run('bash -c "test -f /slamhive/result/{0} && echo yes || echo no"'.format(result_name))
+            if exists.output.decode().strip() != "yes":
+                app.logger.warning(
+                    f"[EVO容器-{thread_name}:{thread_id}] {metric} 结果缺失，写入占位统计文件：{result_name}"
+                )
+                evo.exec_run(
+                    "python3 -c 'import json,zipfile; "
+                    "stats={\"rmse\":-1.0,\"mean\":-1.0,\"median\":-1.0,\"std\":-1.0,"
+                    "\"min\":-1.0,\"max\":-1.0,\"sse\":-1.0}; "
+                    f"zf=zipfile.ZipFile(\"/slamhive/result/{result_name}\",\"w\",zipfile.ZIP_DEFLATED); "
+                    "zf.writestr(\"stats.json\", json.dumps(stats)); zf.close()'"
+                )
+
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 复制轨迹文件到结果目录")
+        ## 复制文件到结果目录
+        evo.exec_run('cp /traj.tum /slamhive/result/traj.tum')
+        evo.exec_run('cp /groundtruth.tum /slamhive/result/groundtruth.tum')
+        
+        app.logger.debug(f"[EVO容器-{thread_name}:{thread_id}] 创建完成标志文件")
+        evo.exec_run('bash -c "touch /slamhive/result/finished"')
+        
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] 停止并移除容器")
+        time.sleep(0.1)
+        evo.stop()
+        evo.remove()
+        
+        app.logger.info(f"[EVO容器-{thread_name}:{thread_id}] EVO评估任务完全完成")
+        print("=========================EVO Task Finished!=====================")
+        
+    except Exception as e:
+        app.logger.error(f"[EVO容器-{thread_name}:{thread_id}] 清理EVO容器时发生错误: {str(e)}", exc_info=True)
+        # 尝试强制清理容器
+        try:
+            evo.remove(force=True)
+            app.logger.warning(f"[EVO容器-{thread_name}:{thread_id}] 强制移除容器成功")
+        except:
+            app.logger.error(f"[EVO容器-{thread_name}:{thread_id}] 无法移除容器")
 
 
 def evo_compare_task_combination(evoId, compare_list, compare_result_path, sub_number, compared_total_flag, local_folder):

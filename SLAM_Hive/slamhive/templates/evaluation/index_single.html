@@ -53,10 +53,17 @@
             {% for evaluation in evaluations %}
                 <tr>
                     <td class="eval_id">{{ evaluation.id }}</td>
-                    <td>{{ evaluation.mappingTask.mappingTaskConf.algorithm.imageTag }}</td>
-                    <td>{{ evaluation.mappingTask.mappingTaskConf.dataset.name }}</td>
-                    <td>{{ evaluation.mappingTask.mappingTaskConf.id }}: {{evaluation.mappingTask.mappingTaskConf.name}}</td>
-                    <td>{{evaluation.mappingTask.id}}</td>
+                    {% if evaluation.mappingTask and evaluation.mappingTask.mappingTaskConf %}
+                        <td>{{ evaluation.mappingTask.mappingTaskConf.algorithm.imageTag }}</td>
+                        <td>{{ evaluation.mappingTask.mappingTaskConf.dataset.name }}</td>
+                        <td>{{ evaluation.mappingTask.mappingTaskConf.id }}: {{evaluation.mappingTask.mappingTaskConf.name}}</td>
+                        <td>{{evaluation.mappingTask.id}}</td>
+                    {% else %}
+                        <td>unlinked</td>
+                        <td>unlinked</td>
+                        <td>unlinked</td>
+                        <td>unlinked</td>
+                    {% endif %}
                     {% if evaluation.state == 'Finished' %}
                         <td style="color:#4CAF50">{{ evaluation.state }}</td>
                     {% elif evaluation.state == 'Running' %}
@@ -67,9 +74,13 @@
                         <td style="color:#f56ade">{{ evaluation.state }}</td>
                     {% endif %}
                     <td>
-                        <a class="button" href="{{ url_for('show_evaluate', id=evaluation.id) }}">
-                            <input class='btn btn-default btn-sm' type="submit" value="Show">
-                        </a>                    
+                        {% if evaluation.mappingTask %}
+                            <a class="button" href="{{ url_for('show_evaluate', id=evaluation.id) }}">
+                                <input class='btn btn-default btn-sm' type="submit" value="Show">
+                            </a>
+                        {% else %}
+                            <input class='btn btn-default btn-sm' type="submit" value="Show" disabled>
+                        {% endif %}
                     </td>
                     {% if version == 'workstation' or version == 'cluster' or version == 'aliyun' %}
                     <td>
@@ -196,4 +207,3 @@ $(document).ready(function() {
     })
 </script>
 {% endblock %}
-

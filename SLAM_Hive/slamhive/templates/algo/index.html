@@ -41,6 +41,7 @@
             <tr>
                 <th>ID</th>
                 <th>Image Name</th>
+                <th>ROS</th>
                 <th>URL (Browse to get the mapping scripts and install docker image)</th>
                 <th>Description</th>
                 {% if version == 'workstation' or version == 'cluster' or version == 'aliyun' %}
@@ -53,6 +54,7 @@
                 <tr>
                     <td>{{ algo.id  }}</td>
                     <td>{{ algo.name }}:{{algo.imageTag}}</td>
+                    <td>{{ algo.rosVersion or '-' }}</td>
                     <!-- <td>{{ algo.imageTag }}</td> -->
                     <td><a href="{{ algo.dockerUrl }}">{{ algo.dockerUrl }}</a></td>
                     <td><pre>{{ algo.description }}</pre> </td>

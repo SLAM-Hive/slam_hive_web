@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with SLAM Hive.  If not, see <https://www.gnu.org/licenses/>
 
+# from logging import logger
 from flask import redirect, url_for, render_template, request, jsonify, send_from_directory, abort
 from slamhive import app, db, socketio
 from slamhive.models import MappingTaskConfig, MappingTask, PerformanceResults, BatchMappingTask
@@ -171,54 +172,133 @@ def calculate_traj_len(task_id):
     return len_rate
 
 
+def _write_performanceresults(mappingtask_id, usage_info):
+    """Create a single PerformanceResults row for task.
+
+    使用显式外键写入而非 relationship 赋值，先清理旧记录，避免 uselist=False 的关系回填副作用
+    （旧关系对象会尝试把旧记录置空，触发空 FK 回滚）。
+    """
+    max_cpu = usage_info.get('max_cpu', 0.0) if isinstance(usage_info, dict) else 0.0
+    mean_cpu = usage_info.get('mean_cpu', 0.0) if isinstance(usage_info, dict) else 0.0
+    max_ram = usage_info.get('max_ram', 0.0) if isinstance(usage_info, dict) else 0.0
+
+    # 清理历史重复记录，确保一对一关系语义一致
+    PerformanceResults.query.filter_by(mappingTask_id=mappingtask_id).delete(synchronize_session=False)
+
+    sub_performanceresults = PerformanceResults(
+        mappingTask_id = mappingtask_id,
+        max_cpu = max_cpu,
+        mean_cpu = mean_cpu,
+        max_ram = max_ram
+    )
+    db.session.add(sub_performanceresults)
+
+
 def CheckTask(mappingtaskID):
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.debug(f"[调度器-{thread_name}:{thread_id}] CheckTask开始检查映射任务 - mappingtaskID={mappingtaskID}")
+
+    # 调度线程的 session 跨轮询复用；先结束上一轮遗留的只读事务（MySQL REPEATABLE READ 快照），
+    # 否则并发创建的任务在这里可能查不到，定时任务会被误删，任务永远停在 Running。
+    db.session.rollback()
     mappingtask = MappingTask.query.get(mappingtaskID)
+    if mappingtask is None:
+        app.logger.error(f"[调度器-{thread_name}:{thread_id}] 未找到映射任务 - mappingtaskID={mappingtaskID}")
+        # 移除无效的调度任务
+        try:
+            from slamhive.blueprints.mappingtask import scheduler
+            scheduler.remove_job(str(mappingtaskID))
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] 已移除无效的定时任务 - mappingtaskID={mappingtaskID}")
+        except Exception as e:
+            app.logger.warning(f"[调度器-{thread_name}:{thread_id}] 移除定时任务失败: {str(e)}")
+        return
     if mappingtask.state == "Failed":
         job_id = str(mappingtaskID)
         if scheduler.get_job(job_id) is not None:
             scheduler.remove_job(job_id)
         return
+
     finished_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID)+"/finished")
+    print("########### [Now In CheckTask function] ###########")
+    print(f"{datetime.now()} CheckTask: checking {finished_path}")
+    app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 检查完成标志文件: {finished_path}")
+    
     if Path(finished_path).is_file():
         print(finished_path)
-        mappingtask.state = "Finished"
+        app.logger.info(f"[调度器-{thread_name}:{thread_id}] 映射任务完成，开始处理结果 - mappingtaskID={mappingtaskID}")
 
         traj_flag_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], str(mappingtaskID) ,"traj_flag.txt")
         with open(traj_flag_path, 'r') as f:
             text = f.read()
             if text == "True":
-                mappingtask.trajectory_state = "Success"
+                trajectory_state = "Success"
             else :
-                mappingtask.trajectory_state = "Unsuccess"
+                trajectory_state = "Unsuccess"
 
 
             # add performance data to mysql
-        usage_info = extract_usage_info_single(mappingtaskID)
+        try:
+            usage_info = extract_usage_info_single(mappingtaskID)
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] 提取的性能信息: {usage_info} - mappingtaskID={mappingtaskID}")
+            _write_performanceresults(mappingtaskID, usage_info)
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] 成功创建性能结果记录 - mappingtaskID={mappingtaskID}")
+            
+        except Exception as e:
+            app.logger.error(f"[调度器-{thread_name}:{thread_id}] 创建性能结果时出错: {str(e)} - mappingtaskID={mappingtaskID}")
+            # 如果性能数据创建失败，创建默认的性能结果
+            try:
+                # 先回滚可能的错误状态
+                db.session.rollback()
+                _write_performanceresults(mappingtaskID, {"max_cpu": 0.0, "mean_cpu": 0.0, "max_ram": 0.0})
+                app.logger.info(f"[调度器-{thread_name}:{thread_id}] 使用默认性能数据 - mappingtaskID={mappingtaskID}")
+            except Exception as fallback_e:
+                app.logger.error(f"[调度器-{thread_name}:{thread_id}] 创建默认性能结果也失败: {str(fallback_e)} - mappingtaskID={mappingtaskID}")
+                # 如果还是失败，就不设置性能结果，继续处理其他逻辑
 
-        sub_performanceresults = PerformanceResults(
-            mappingTask_id = mappingtaskID,
-            max_cpu = usage_info['max_cpu'],
-            mean_cpu = usage_info['mean_cpu'],
-            max_ram = usage_info['max_ram']
-        )
-        db.session.add(sub_performanceresults)
-        # mappingtask.performanceresults.append(sub_performanceresults)
-        mappingtask.performanceresults = sub_performanceresults
-        
-        
+        # 状态放在性能数据之后设置：上面失败分支里的 rollback 会丢弃此前未提交的修改，
+        # 以前 profiling.csv 还没写出时任务会一直停在 Running。
+        mappingtask.state = "Finished"
+        mappingtask.trajectory_state = trajectory_state
+
         # trajectory length
         # print("type of mappingtask ID----------------------------:", type(mappingtaskID))
         # print(type(mappingtask.id)) # 看看类型是否相同
-        len_rate = calculate_traj_len(mappingtaskID)
-        mappingtask.traj_length = len_rate
+        try:
+            len_rate = calculate_traj_len(mappingtaskID)
+            mappingtask.traj_length = len_rate
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] 轨迹长度计算完成: {len_rate} - mappingtaskID={mappingtaskID}")
+        except Exception as e:
+            app.logger.error(f"[调度器-{thread_name}:{thread_id}] 轨迹长度计算失败: {str(e)} - mappingtaskID={mappingtaskID}")
+            mappingtask.traj_length = 0.0
 
         
-        db.session.commit()
+        try:
+            db.session.commit()
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] 数据库提交成功 - mappingtaskID={mappingtaskID}")
+        except Exception as e:
+            app.logger.error(f"[调度器-{thread_name}:{thread_id}] 数据库提交失败: {str(e)} - mappingtaskID={mappingtaskID}")
+            try:
+                db.session.rollback()
+                app.logger.info(f"[调度器-{thread_name}:{thread_id}] 数据库回滚成功 - mappingtaskID={mappingtaskID}")
+            except Exception as rollback_e:
+                app.logger.error(f"[调度器-{thread_name}:{thread_id}] 数据库回滚失败: {str(rollback_e)} - mappingtaskID={mappingtaskID}")
 
         print('[MappingTask ID: '+str(mappingtaskID)+'] finished!')
-        scheduler.remove_job(str(mappingtaskID))
+        try:
+            from slamhive.blueprints.mappingtask import scheduler
+            scheduler.remove_job(str(mappingtaskID))
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] 调度任务移除成功 - mappingtaskID={mappingtaskID}")
+        except Exception as e:
+            app.logger.warning(f"[调度器-{thread_name}:{thread_id}] 调度任务移除失败: {str(e)} - mappingtaskID={mappingtaskID}")
+        
         #push state to the frontend
-        socketio.emit('update_state', {'data': 'Mapping task ' + str(mappingtaskID) +' is finished!'})
+        try:
+            socketio.emit('update_state', {'data': 'Mapping task ' + str(mappingtaskID) +' is finished!'})
+        except Exception as e:
+            app.logger.warning(f"[调度器-{thread_name}:{thread_id}] 前端状态推送失败: {str(e)} - mappingtaskID={mappingtaskID}")
     else : 
         print('[MappingTask ID '+str(mappingtaskID)+'] is running...')
 
@@ -251,16 +331,7 @@ def CheckTask_single(mappingtaskID):
             # add performance data to mysql
         usage_info = extract_usage_info_single(mappingtaskID)
 
-        sub_performanceresults = PerformanceResults(
-            mappingTask_id = mappingtaskID,
-            max_cpu = usage_info['max_cpu'],
-            mean_cpu = usage_info['mean_cpu'],
-            max_ram = usage_info['max_ram']
-        )
-
-        db.session.add(sub_performanceresults)
-        # mappingtask.performanceresults.append(sub_performanceresults)
-        mappingtask.performanceresults = sub_performanceresults
+        _write_performanceresults(mappingtaskID, usage_info)
 
         # lenght rate
         mappingtask.traj_length = calculate_traj_len(mappingtaskID)
@@ -268,7 +339,11 @@ def CheckTask_single(mappingtaskID):
         db.session.commit()
 
         print('[MappingTask ID: '+str(mappingtaskID)+'] finished!')
-        scheduler.remove_job(str(mappingtaskID))
+        try:
+            from slamhive.blueprints.mappingtask import scheduler
+            scheduler.remove_job(str(mappingtaskID))
+        except Exception as e:
+            app.logger.warning(f"调度任务移除失败: {str(e)} - mappingtaskID={mappingtaskID}")
         #push state to the frontend
         socketio.emit('update_state', {'data': 'Mapping task ' + str(mappingtaskID) +' is finished!'})
     else : 
@@ -313,15 +388,7 @@ def CheckTask_batch(batchmappingtaskId, mappingtaskIdList, container_number):
                 mappingtask_list[now_number].CPU_cores = CPU_cores
 
 
-            sub_performanceresults = PerformanceResults(
-                mappingTask_id = mappingtaskIdList[now_number],
-                max_cpu = usage_info['max_cpu'],
-                mean_cpu = usage_info['mean_cpu'],
-                max_ram = usage_info['max_ram']
-            )
-            db.session.add(sub_performanceresults)
-            # mappingtask_list[now_number].performanceresults.append(sub_performanceresults)
-            mappingtask_list[now_number].performanceresults = sub_performanceresults
+            _write_performanceresults(mappingtaskIdList[now_number], usage_info)
             # mappingtask.performanceresults = sub_performanceresults
 
             mappingtask_list[now_number].traj_length = calculate_traj_len(mappingtask_list[now_number].id)
@@ -333,7 +400,11 @@ def CheckTask_batch(batchmappingtaskId, mappingtaskIdList, container_number):
 
 
     if now_finished_number == container_number:
-        scheduler.remove_job("batch"+str(batchmappingtaskId))
+        try:
+            from slamhive.blueprints.mappingtask import scheduler
+            scheduler.remove_job("batch"+str(batchmappingtaskId))
+        except Exception as e:
+            app.logger.warning(f"批处理调度任务移除失败: {str(e)} - batchmappingtaskId={batchmappingtaskId}")
         print('The mapping task is done!')
     else :
         print("finished number: " + str(now_finished_number))
@@ -453,23 +524,37 @@ def RunMapping_batch_workstaion(configNameList, mappingtaskIDList):
 # 创建docker容器（修改成创建statefulset）
 # configPath：yaml文件的名称
 def RunMapping(configName, mappingtaskID):
+    app.logger.info(f"[START!] Now run mapping task {configName} with mappingtaskID {mappingtaskID}")
     try:
         mapping_cadvisor.mapping_task(configName, mappingtaskID)
-    except Exception:
-        app.logger.exception("Mapping task %s failed before completion", mappingtaskID)
-        with app.app_context():
-            try:
-                db.session.rollback()
-                mappingtask = MappingTask.query.get(mappingtaskID)
-                if mappingtask is not None and mappingtask.state != "Finished":
-                    mappingtask.state = "Failed"
-                    mappingtask.trajectory_state = "Unsuccess"
-                    db.session.commit()
-            except Exception:
-                db.session.rollback()
-                app.logger.exception("Could not update failed mapping task %s", mappingtaskID)
-        raise
-    print('The mapping task is done!')
+    except Exception as e:
+        # 导入traceback模块
+        import traceback
+        
+        # 打印详细的错误信息
+        app.logger.error(f"[ERROR!] 线程内部代码出错！！！: {e}")
+        app.logger.error(f"[ERROR!] 错误类型: {type(e).__name__}")
+        app.logger.error(f"[ERROR!] 完整错误追踪:\n{traceback.format_exc()}")
+        
+        # 可选：打印更多调试信息
+        app.logger.error(f"[ERROR!] 配置文件: {configName}")
+        app.logger.error(f"[ERROR!] 任务ID: {mappingtaskID}")
+        
+        # 更新数据库状态为失败
+        try:
+            mappingtask = MappingTask.query.get(mappingtaskID)
+            if mappingtask and mappingtask.state != "Finished":
+                mappingtask.state = "Failed"
+                mappingtask.trajectory_state = "Unsuccess"
+                db.session.commit()
+                app.logger.info(f"[INFO] 已更新任务 {mappingtaskID} 状态为 Failed")
+        except Exception as db_e:
+            app.logger.error(f"[ERROR!] 更新数据库状态失败: {db_e}")
+            app.logger.error(f"[ERROR!] 数据库错误追踪:\n{traceback.format_exc()}")
+        
+        return  # 不要返回jsonify，因为这是在线程中
+    
+    app.logger.info(f"[DONE!] The mapping task {configName} with mappingtaskID {mappingtaskID} is done!")
 
 # 相比原来：增加了container_number参数
     # container_number：algo个数
@@ -493,21 +578,85 @@ def RunMapping_batch_aliyun(mappingtaskIdList, mappingtask_number, batchMappingT
 ## mappingtask one in workstation
 @app.route('/mappingtask/create/<int:id>', methods=['GET', 'POST'])
 def create_mappingtask(id): 
+    # === 调试Level 1: 写文件确认函数被调用 ===
+    from datetime import datetime as dt
+    import sys
+    
+    debug_msg = f"[{dt.now()}] create_mappingtask called with ID: {id}, method: {request.method}\n"
+    
+    # 文件调试（已有）
+    # with open('/tmp/flask_debug.log', 'a') as f:
+    #     f.write(debug_msg)
+    #     f.flush()
+    
+    # 强制输出到stderr（新增）
+    sys.stderr.write("########### [Now In create_mappingtask function] ###########")
+    sys.stderr.write(f"🔍 REAL-TIME DEBUG: {debug_msg}")
+    sys.stderr.flush()
+    
+    # Flask logger（会有缓冲）
+    app.logger.info(f"接收到的ID: {id}")
+    app.logger.info(f"请求方法: {request.method}")
 
+    
     version = app.config['CURRENT_VERSION']
+    app.logger.info(f"当前版本: {version}")
+    
     if version != 'workstation':
+        app.logger.warning(f"版本不匹配，当前版本: {version}")
         return abort(403)
 
-    config = MappingTaskConfig.query.get(id)
+    try: 
+        config = MappingTaskConfig.query.get(id)
+        app.logger.info(f"查询到config: {config}")
+        
+        # === 调试Level 2: 检查数据库查询结果 ===
+        debug_msg = f"[{dt.now()}] Config查询结果: {config}, mappingTasks数量: {len(config.mappingTasks) if config else 'None'}\n"
+        # with open('/tmp/flask_debug.log', 'a') as f:
+        #     f.write(debug_msg)
+        #     f.flush()
+        
+        # 实时输出
+        sys.stderr.write(f"🔍 REAL-TIME DEBUG: {debug_msg}")
+        sys.stderr.flush()
+            
+    except Exception as e:
+        app.logger.error(f"查询config异常: {e}")
+        print(f"查询config异常: {e}")
+        
+        # === 调试Level 3: 异常详细信息 ===
+        import traceback
+        debug_msg = f"[{dt.now()}] 数据库查询异常: {e}\n{traceback.format_exc()}\n"
+        # with open('/tmp/flask_debug.log', 'a') as f:
+        #     f.write(debug_msg)
+        #     f.flush()
+        
+        # 实时输出异常
+        sys.stderr.write(f"🚨 REAL-TIME ERROR: {debug_msg}")
+        sys.stderr.flush()
+        return jsonify(result='error')
 
-    print(config.mappingTasks)
+    app.logger.info("-------------##########-------------------")
+    app.logger.info(f"config.mappingTasks: {config.mappingTasks}")
+    app.logger.info("-------------##########-------------------")
+    
 
     if len(config.mappingTasks) == 1:
+        app.logger.info("mappingTasks已存在，返回exist")
+        debug_msg = f"[{dt.now()}] 任务已存在，返回exist\n"
         return jsonify(result='exist')
+        # with open('/tmp/flask_debug.log', 'a') as f:
+        #     f.write(debug_msg)
+        #     f.flush()
+    else:
+        app.logger.info("mappingTasks还不存在，继续运行！")
+        # 实时输出
+        sys.stderr.write(f"🔍 REAL-TIME DEBUG: {debug_msg}")
+        sys.stderr.flush()
 
     description = config.description
     state = 'Running'#To do: Check if the container is running
-    time = datetime.now().replace(microsecond=0)
+    time = dt.now().replace(microsecond=0)
 
     cmd = "cat /proc/cpuinfo | grep 'model name' | sort | uniq | awk -F '[:]' '{print $2}'"
     result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
@@ -523,14 +672,16 @@ def create_mappingtask(id):
     except Exception as e:
         CPU_cores = -1
     
+    app.logger.info(f"CPU信息 - 类型: {CPU_type}, 核心数: {CPU_cores}")
 
-
-    
+    app.logger.info("##Now create mappingtask in create_mappingtask function##")
     mappingtask = MappingTask(description=description, state=state, time=time, CPU_cores = CPU_cores, CPU_type = CPU_type)
     db.session.add(mappingtask)
     config.mappingTasks.append(mappingtask)
     db.session.commit()
 
+    app.logger.info(f"mappingtask.id: {mappingtask.id}")
+    
     config_filename = str(id) + "_" + str(config.name) + ".yaml"
     mappingtask_id = mappingtask.id
     # mapping reusult存放的位置 需要修改
@@ -538,19 +689,39 @@ def create_mappingtask(id):
     if not os.path.exists(mapping_result_dir):
         os.mkdir(mapping_result_dir)
 
-
+    app.logger.info(f"配置文件名: {config_filename}, 结果目录: {mapping_result_dir}")
 
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     # add algo and dataset attribute
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
-
-    executor.submit(RunMapping, config_filename, str(mappingtask_id))
-    # RunMapping(config_filename, str(mappingtask_id))
-    scheduler.add_job(id=str(mappingtask_id), func=CheckTask, args=[mappingtask_id], trigger="interval", seconds=3)
+    app.logger.info(f"配置文件已保存到: {config_save_path}")
+    app.logger.info(f"Now submit mapping task to executor!")
+    try:
+        executor.submit(RunMapping, config_filename, str(mappingtask_id))
+        app.logger.info(f"Now add job to scheduler, for real-time check task status!!!")
+        scheduler.add_job(id=str(mappingtask_id), func=CheckTask, args=[mappingtask_id], trigger="interval", seconds=3)
+    except Exception as e:
+        app.logger.error(f"[ERROR!] Submit mapping task to executor failed: {e}")
+        return jsonify(result='error')
+    
+    app.logger.info("任务成功提交给executor，并添加到scheduler中，用于实时检查任务状态！！！")
+    
+    # === 调试Level 4: 成功完成 ===
+    debug_msg = f"[{dt.now()}] 任务创建成功，mappingtask_id: {mappingtask_id}\n"
+    # with open('/tmp/flask_debug.log', 'a') as f:
+    #     f.write(debug_msg)
+    #     f.flush()
+    
+    # 实时输出成功信息
+    app.logger.info(debug_msg)
+    # sys.stderr.write(f"✅ REAL-TIME SUCCESS: {debug_msg}")
+    # sys.stderr.flush()
+    
     # return redirect(url_for('index_mappingtask'))
     return jsonify(result='success')
 
@@ -617,6 +788,7 @@ def create_mappingtask_fake(id):
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -664,6 +836,7 @@ def create_single_mappingtask(id):
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -708,6 +881,7 @@ def create_single_mappingtask_fake(id):
     config_save_path = os.path.join(mapping_result_dir, config_filename)
     config_dict = generate_config_dict(id)
     config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+    config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
     config_dict.update({"dataset-attribute": config.dataset.attribute})
     save_dict_to_yaml(config_dict, config_save_path)
     
@@ -791,6 +965,7 @@ def create_batch_mappingtask_workstation():
         config_save_path = os.path.join(mapping_result_dir, config_filename)
         config_dict = generate_config_dict(mappingtaskconfigIdList[i])
         config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+        config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
         config_dict.update({"dataset-attribute": config.dataset.attribute})
         save_dict_to_yaml(config_dict, config_save_path)
 
@@ -882,6 +1057,7 @@ def create_batch_mappingtask_cluster():
         config_save_path = os.path.join(mapping_result_dir, config_filename)
         config_dict = generate_config_dict(mappingtaskconfigIdList[i])
         config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+        config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
         config_dict.update({"dataset-attribute": config.dataset.attribute})
         save_dict_to_yaml(config_dict, config_save_path)
     batchMappingTask_subTask_path = os.path.join(batchMappingTask_path, "subTask.txt")
@@ -1072,6 +1248,7 @@ def create_batch_mappingtask_aliyun():
         config_save_path = os.path.join(mapping_result_dir, config_filename)
         config_dict = generate_config_dict(mappingtaskconfigIdList[i])
         config_dict.update({"algorithm-attribute": config.algorithm.attribute})
+        config_dict.update({"algorithm-ros-version": config.algorithm.rosVersion})
         config_dict.update({"dataset-attribute": config.dataset.attribute})
         save_dict_to_yaml(config_dict, config_save_path)
     #E

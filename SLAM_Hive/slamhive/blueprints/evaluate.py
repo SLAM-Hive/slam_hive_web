@@ -16,6 +16,7 @@
 
 from flask import flash, redirect, url_for, render_template, send_from_directory, request, jsonify, abort
 from slamhive import app, db, socketio
+import logging
 from slamhive.models import MappingTask, Evaluation, EvoResults, MultiEvaluation, PerformanceResults, Algorithm, Dataset, MappingTaskConfig, GroupMappingTaskConfig
 from slamhive.forms import DeleteEvaluationForm
 from slamhive.task import evo
@@ -27,10 +28,6 @@ import os, json, time, yaml
 from slamhive.forms import DeleteMappingTaskConfigForm
 
 import zipfile
-
-
-
-
 
 import numpy as np
 import pandas as pd # pandas == 2.0.3
@@ -52,36 +49,130 @@ executor = ThreadPoolExecutor(10)
 scheduler = APScheduler()
 scheduler.start()
 
+
+def _resolve_dataset_name(mappingtask, mappingtask_id):
+    return _resolve_dataset(mappingtask, mappingtask_id).name
+
+
+def _resolve_dataset(mappingtask, mappingtask_id):
+    mapping_task_conf = getattr(mappingtask, "mappingTaskConf", None)
+    if mapping_task_conf is None:
+        raise ValueError(f"映射任务 {mappingtask_id} 未绑定 MappingTaskConfig")
+
+    dataset = getattr(mapping_task_conf, "dataset", None)
+    if dataset is None or not getattr(dataset, "name", None):
+        raise ValueError(f"映射任务 {mappingtask_id} 的配置缺少数据集信息")
+
+    return dataset
+
 def RunEVO(args1, args2, args3):
-    evo.evo_task(args1, args2, args3)
-    print('The EVO task is done!')
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.info(f"[多线程-{thread_name}:{thread_id}] RunEVO开始执行")
+    app.logger.debug(f"[多线程-{thread_name}:{thread_id}] 参数: trajFolder={args1}, datasetName={args2}, evalId={args3}")
+    
+    try:
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 调用evo.evo_task执行EVO评估任务")
+        evo.evo_task(args1, args2, args3)
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] EVO任务执行完成 - evalId={args3}")
+        print('The EVO task is done!')
+    except Exception as e:
+        app.logger.error(f"[多线程-{thread_name}:{thread_id}] EVO任务执行失败 - evalId={args3}: {str(e)}", exc_info=True)
+        # 重新抛出异常，让上层处理
+        raise
 
 def RunEVO_batch(args1, args2, args3, args4):
-    evo.evo_task_batch(args1, args2, args3, args4)
-    # print('The batch EVO task is done!')
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.info(f"[多线程-{thread_name}:{thread_id}] RunEVO_batch开始执行批量EVO任务")
+    app.logger.debug(f"[多线程-{thread_name}:{thread_id}] 参数: trajFolders={args1}, datasetNames={args2}, evalIds={args3}, mappingtaskIds={args4}")
+    app.logger.info(f"[多线程-{thread_name}:{thread_id}] 批量任务数量: {len(args3) if isinstance(args3, list) else 1}")
+    
+    try:
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 调用evo.evo_task_batch执行批量EVO评估任务")
+        evo.evo_task_batch(args1, args2, args3, args4)
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 批量EVO任务执行完成")
+        # print('The batch EVO task is done!')
+    except Exception as e:
+        app.logger.error(f"[多线程-{thread_name}:{thread_id}] 批量EVO任务执行失败: {str(e)}", exc_info=True)
+        # 重新抛出异常，让上层处理
+        raise
 
 def RunEVO_multi(args1, args2, args3, args4):
-    evo.evo_task_multi(args1, args2, args3, args4)
-    # print('The batch EVO task is done!')
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.info(f"[多线程-{thread_name}:{thread_id}] RunEVO_multi开始执行多重EVO任务")
+    app.logger.debug(f"[多线程-{thread_name}:{thread_id}] 参数: multiEvalId={args1}, mappingtaskIds={args2}, evalIds={args3}, datasetName={args4}")
+    app.logger.info(f"[多线程-{thread_name}:{thread_id}] 多重评估任务ID: {args1}, 包含任务数量: {len(args2) if isinstance(args2, list) else 1}")
+    
+    try:
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 调用evo.evo_task_multi执行多重EVO评估任务")
+        evo.evo_task_multi(args1, args2, args3, args4)
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 多重EVO任务执行完成 - multiEvalId={args1}")
+        # print('The multi EVO task is done!')
+    except Exception as e:
+        app.logger.error(f"[多线程-{thread_name}:{thread_id}] 多重EVO任务执行失败 - multiEvalId={args1}: {str(e)}", exc_info=True)
+        # 重新抛出异常，让上层处理
+        raise
 
 def RunEVO_combination(args1, args2, args3):
-    evo.evo_task_combination(args1, args2, args3)
-    print('The combination EVO task is done!')
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.info(f"[多线程-{thread_name}:{thread_id}] RunEVO_combination开始执行组合EVO任务")
+    app.logger.debug(f"[多线程-{thread_name}:{thread_id}] 参数: trajFolder={args1}, datasetName={args2}, evalId={args3}")
+    
+    try:
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 调用evo.evo_task_combination执行组合EVO评估任务")
+        evo.evo_task_combination(args1, args2, args3)
+        app.logger.info(f"[多线程-{thread_name}:{thread_id}] 组合EVO任务执行完成 - evalId={args3}")
+        print('The combination EVO task is done!')
+    except Exception as e:
+        app.logger.error(f"[多线程-{thread_name}:{thread_id}] 组合EVO任务执行失败 - evalId={args3}: {str(e)}", exc_info=True)
+        # 重新抛出异常，让上层处理
+        raise
 
 
 
 def CheckEVO(id):
+    import threading
+    thread_id = threading.get_ident()
+    thread_name = threading.current_thread().name
+    
+    app.logger.debug(f"[调度器-{thread_name}:{thread_id}] CheckEVO开始检查评估任务 - evalId={id}")
+
+    # 结束调度线程上一轮遗留的只读事务，确保能看到刚提交的评估记录（同 CheckTask）。
+    db.session.rollback()
     eval = Evaluation.query.get(id)
+    if eval is None:
+        app.logger.error(f"[调度器-{thread_name}:{thread_id}] 未找到评估任务 - evalId={id}")
+        return
+    
     finished_path = os.path.join(app.config['EVALUATION_RESULTS_PATH'], str(id)+"/finished")
+    app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 检查完成标志文件: {finished_path}")
+    
     if Path(finished_path).is_file():
         # when evaluation Finished, call 2 functions to get 14 ate & rpe parameters and get 3 performance parameters
+        app.logger.info(f"[调度器-{thread_name}:{thread_id}] 评估任务完成，开始处理结果 - evalId={id}")
         eval.state = "Finished"
         ate_stats_dict = {}
         rpe_stats_dict = {}
         ################################################## if evo no matching, will cause error ( TODO)
         try:
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 提取错误信息 - evalId={id}")
             ate_stats_dict, rpe_stats_dict = extract_error_info(id)
             eval.resultPath = os.path.join(app.config['EVALUATION_RESULTS_PATH'], str(id))
+            
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 创建EvoResults对象 - evalId={id}")
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] ATE RMSE: {ate_stats_dict.get('rmse', 'N/A')}, RPE RMSE: {rpe_stats_dict.get('rmse', 'N/A')}")
+            
             sub_evoresults = EvoResults(evaluation_id = id,
                                         ate_rmse = ate_stats_dict['rmse'], 
                                         ate_mean = ate_stats_dict['mean'],
@@ -97,22 +188,55 @@ def CheckEVO(id):
                                         rpe_min = rpe_stats_dict['min'],
                                         rpe_max = rpe_stats_dict['max'],
                                         rpe_sse = rpe_stats_dict['sse'])
+            
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 保存EvoResults到数据库 - evalId={id}")
             db.session.add(sub_evoresults)
             db.session.commit()
+            
+            app.logger.info(f"[调度器-{thread_name}:{thread_id}] EVO任务完成并保存结果 - evalId={id}")
             print('[EVO ID: '+str(id)+'] finished!')
+            
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 移除定时任务 - evalId={id}")
             scheduler.remove_job(str(id))
+            
             #push state to the frontend
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 发送完成状态到前端 - evalId={id}")
             socketio.emit('update_eval_state', {'data': 'Evaluation task ' + str(id)+' is done'})
         except Exception as e:
+            app.logger.error(f"[调度器-{thread_name}:{thread_id}] 处理评估结果时发生错误 - evalId={id}: {str(e)}", exc_info=True)
+            
+            # 检查结果目录中的文件，帮助诊断问题
+            result_dir = os.path.join(app.config['EVALUATION_RESULTS_PATH'], str(id))
+            if os.path.exists(result_dir):
+                try:
+                    files_in_result = os.listdir(result_dir)
+                    app.logger.info(f"[调度器-{thread_name}:{thread_id}] 结果目录内容: {files_in_result}")
+                    
+                    # 检查关键文件是否存在
+                    required_files = ['ape.zip', 'rpe.zip']
+                    missing_files = [f for f in required_files if f not in files_in_result]
+                    if missing_files:
+                        app.logger.error(f"[调度器-{thread_name}:{thread_id}] 缺失关键结果文件: {missing_files}")
+                    else:
+                        app.logger.info(f"[调度器-{thread_name}:{thread_id}] 所有关键结果文件都存在")
+                        
+                except Exception as list_error:
+                    app.logger.error(f"[调度器-{thread_name}:{thread_id}] 无法列出结果目录内容: {str(list_error)}")
+            else:
+                app.logger.error(f"[调度器-{thread_name}:{thread_id}] 结果目录不存在: {result_dir}")
+            
             print(e)
             delete_evaluate_when_running(id)
             
-
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 移除失败的定时任务 - evalId={id}")
             scheduler.remove_job(str(id))
+            
             #push state to the frontend
+            app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 发送失败状态到前端 - evalId={id}")
             socketio.emit('update_eval_state', {'data': 'Evaluation task ' + str(id)+' is failed'})
             # 并且修改轨迹的状态
-
+    else:
+        app.logger.debug(f"[调度器-{thread_name}:{thread_id}] 未找到结束标记，评估任务未完成 - evalId={id}")
 
 def CheckEVO_multi(id):
     print("multi id:", id)
@@ -260,24 +384,75 @@ def CheckEVO_batch(eval_id):
 
 @app.route('/eval/create/<int:id>')
 def create_evaluate(id):
-
-    version = app.config['CURRENT_VERSION']
-    if version != 'workstation' and version != 'cluster' and version != 'aliyun':
-        return abort(403)
-    mappingtask = MappingTask.query.get(id)
-    trajFolder = str(id)
-    datasetName = mappingtask.mappingTaskConf.dataset.name
-
-    state = 'Running'
-    eval = Evaluation(state=state)
-    db.session.add(eval)
-    mappingtask.evaluation = eval
-    db.session.commit()
-
-    executor.submit(RunEVO, trajFolder, datasetName, str(eval.id))
-    # RunEVO(trajFolder, datasetName, str(eval.id))
-    scheduler.add_job(id=str(eval.id), func=CheckEVO, args=[eval.id], trigger="interval", seconds=3)
-    return redirect(url_for('index_evaluate_single'))
+    # 记录函数开始执行
+    app.logger.info(f"开始创建评估任务，映射任务ID: {id}")
+    
+    try:
+        # 版本检查
+        version = app.config['CURRENT_VERSION']
+        app.logger.debug(f"当前版本: {version}")
+        
+        if version != 'workstation' and version != 'cluster' and version != 'aliyun':
+            app.logger.warning(f"版本 {version} 不被支持，拒绝访问")
+            return abort(403)
+        
+        # 获取映射任务
+        app.logger.debug(f"查询映射任务，ID: {id}")
+        mappingtask = MappingTask.query.get(id)
+        
+        if mappingtask is None:
+            app.logger.error(f"未找到映射任务，ID: {id}")
+            return abort(404)
+        
+        app.logger.info(f"成功获取映射任务: {mappingtask}")
+        app.logger.debug(f"映射任务状态: {mappingtask.state}")
+        app.logger.debug(f"轨迹状态: {mappingtask.trajectory_state}")
+        
+        # 获取数据集信息
+        trajFolder = str(id)
+        try:
+            datasetName = _resolve_dataset_name(mappingtask, id)
+        except ValueError as e:
+            app.logger.error(f"评估任务前置检查失败 - mappingtask_id={id}: {str(e)}")
+            db.session.rollback()
+            flash(str(e), "error")
+            return abort(400, description=str(e))
+        app.logger.info(f"轨迹文件夹: {trajFolder}, 数据集名称: {datasetName}")
+        
+        # 检查是否已存在评估任务
+        if mappingtask.evaluation is not None:
+            app.logger.warning(f"映射任务 {id} 已存在评估任务: {mappingtask.evaluation.id}")
+        
+        # 创建评估任务
+        state = 'Running'
+        eval = Evaluation(state=state)
+        app.logger.debug(f"创建新的评估任务，状态: {state}")
+        
+        db.session.add(eval)
+        mappingtask.evaluation = eval
+        
+        # 提交数据库更改
+        app.logger.debug("提交数据库更改")
+        db.session.commit()
+        app.logger.info(f"成功创建评估任务，ID: {eval.id}")
+        
+        # 提交EVO任务到执行器
+        app.logger.info(f"提交EVO任务到执行器: trajFolder={trajFolder}, datasetName={datasetName}, evalId={eval.id}")
+        executor.submit(RunEVO, trajFolder, datasetName, str(eval.id))
+        
+        # 添加定时检查任务
+        app.logger.debug(f"添加定时检查任务，评估ID: {eval.id}")
+        scheduler.add_job(id=str(eval.id), func=CheckEVO, args=[eval.id], trigger="interval", seconds=3)
+        
+        app.logger.info(f"评估任务创建完成，重定向到评估列表页面")
+        return redirect(url_for('index_evaluate_single'))
+        
+    except Exception as e:
+        app.logger.error(f"创建评估任务时发生错误: {str(e)}", exc_info=True)
+        # 如果数据库操作失败，进行回滚
+        db.session.rollback()
+        # 可以选择返回错误页面或重定向到错误页面
+        return abort(500)
 
 
 def run_batch_evaluation(mappingtaskIdList):
@@ -297,7 +472,12 @@ def run_batch_evaluation(mappingtaskIdList):
     for i in range(eval_number):
         mappingTask.append(MappingTask.query.get(mappingtaskIdList[i]))
         trajFolder.append(str(mappingtaskIdList[i]))
-        datasetName.append(mappingTask[i].mappingTaskConf.dataset.name)
+        try:
+            datasetName.append(_resolve_dataset_name(mappingTask[i], mappingtaskIdList[i]))
+        except ValueError as e:
+            db.session.rollback()
+            app.logger.error(f"批量评估任务前置检查失败 - mappingtask_id={mappingtaskIdList[i]}: {str(e)}")
+            raise
         state = 'Running'
         eval.append(Evaluation(state=state))
         db.session.add(eval[i])
@@ -406,7 +586,8 @@ def create_evaluate_multi():
         
         evaluationIdList.append(evaluation.id)
 
-        dataset_set.add(mappingtask.mappingTaskConf.dataset.id)
+        dataset = _resolve_dataset(mappingtask, value['mappingTaskID'])
+        dataset_set.add(dataset.id)
 
     if len(mappingtaskIdList) == 0:
         return jsonify(result="no task")
@@ -437,7 +618,8 @@ def create_evaluate_multi():
         multiEvaluation.mappingtasks.append(mappingTask[i])
         db.session.commit()
 
-    executor.submit(RunEVO_multi, multiEvaluation_id, mappingtaskIdList, evaluationIdList, mappingTask[0].mappingTaskConf.dataset.name)
+    dataset_name = _resolve_dataset_name(mappingTask[0], mappingtaskIdList[0])
+    executor.submit(RunEVO_multi, multiEvaluation_id, mappingtaskIdList, evaluationIdList, dataset_name)
     # RunEVO_multi(multiEvaluation_id, mappingtaskIdList, evaluationIdList)
     scheduler.add_job(id="multiEvaluation"+str(multiEvaluation_id), func=CheckEVO_multi, args=[multiEvaluation_id], trigger="interval", seconds=3)
     return jsonify(result='success')
@@ -568,10 +750,17 @@ def show_evaluate(id):
                 evo_img_list.append(os.path.join(path, filename))
     eval =  Evaluation.query.get(id)
     mappingtask = eval.mappingTask
-    config = mappingtask.mappingTaskConf
+    if mappingtask is None:
+        flash("Evaluation is not linked to a mapping task.")
+        return redirect(url_for('index_evaluate_single'))
 
-    mapping_result_folder = str(eval.mappingTask.id)
-    config_filename = str(eval.mappingTask.mappingTaskConf.id) + '_' + eval.mappingTask.mappingTaskConf.name + '.yaml'
+    config = mappingtask.mappingTaskConf
+    if config is None:
+        flash("Mapping task is missing config details.")
+        return redirect(url_for('index_evaluate_single'))
+
+    mapping_result_folder = str(mappingtask.id)
+    config_filename = str(config.id) + '_' + config.name + '.yaml'
     config_path = os.path.join(app.config['MAPPING_RESULTS_PATH'], mapping_result_folder + '/' + config_filename)
     with open(config_path, 'r', encoding='utf-8') as f:
         config_dict = yaml.load(f, Loader=yaml.FullLoader)
@@ -873,29 +1062,47 @@ def show_multi_evaluate(id):
 #     return render_template('/evaluation/show_list_certain.html', eval = eval, config_dicts = config_dicts, paramValues = paramValues, sub_task_number = sub_task_number, evo_img_list=evo_img_list, choose_check_list = choose_check_list, config_dicts_len = len(config_dicts))
 
 
+def _read_evo_stats_from_zip(zip_path: str, fallback_name: str) -> dict:
+    import json, zipfile
+
+    if not os.path.exists(zip_path):
+        app.logger.warning(f"[评估] 缺少{fallback_name}结果文件: {zip_path}，将写入默认占位统计")
+        return {
+            "rmse": -1.0,
+            "mean": -1.0,
+            "median": -1.0,
+            "std": -1.0,
+            "min": -1.0,
+            "max": -1.0,
+            "sse": -1.0,
+        }
+
+    with zipfile.ZipFile(zip_path, "r") as f:
+        names = f.namelist()
+        if "stats.json" not in names:
+            app.logger.warning(f"[评估] {fallback_name} zip中缺少 stats.json: {zip_path}，将写入默认占位统计")
+            return {
+                "rmse": -1.0,
+                "mean": -1.0,
+                "median": -1.0,
+                "std": -1.0,
+                "min": -1.0,
+                "max": -1.0,
+                "sse": -1.0,
+            }
+        with f.open("stats.json") as fp:
+            return json.load(fp)
+
+
 def extract_error_info(id):
-    import zipfile, json, os, shutil
     results_path = os.path.join(app.config['EVALUATION_RESULTS_PATH'], str(id))
     ape_zip_path = os.path.join(results_path, 'ape.zip')
-    temp_path = os.path.join(results_path, 'temp')
-    with zipfile.ZipFile(ape_zip_path, 'r') as f:
-        for file in f.namelist():
-            f.extract(file, temp_path)
-    with open(temp_path + '/stats.json', 'r') as f:
-        stats_dict = json.load(f)
-        # print(stats_dict)
-    shutil.rmtree(temp_path)
-
     rpe_zip_path = os.path.join(results_path, 'rpe.zip')
-    temp_rpe_path = os.path.join(results_path, 'temp_rpe')
-    with zipfile.ZipFile(rpe_zip_path, 'r') as f:
-        for file in f.namelist():
-            f.extract(file, temp_rpe_path)
-    with open(temp_rpe_path + '/stats.json', 'r') as f:
-        rpe_stats_dict = json.load(f)
-        # print(rpe_stats_dict)
-    shutil.rmtree(temp_rpe_path)
-    return stats_dict, rpe_stats_dict
+
+    ape_stats_dict = _read_evo_stats_from_zip(ape_zip_path, "APE")
+    rpe_stats_dict = _read_evo_stats_from_zip(rpe_zip_path, "RPE")
+
+    return ape_stats_dict, rpe_stats_dict
 
 
 
@@ -998,15 +1205,25 @@ def delete_evaluate(id):
 def delete_evaluate_when_running(id):
     # 如果任务创建失败 执行该代码
     eval = Evaluation.query.get(id)
-    ma = Evaluation.query.get(id).mappingTask
+    if eval is None:
+        return
+    ma = eval.mappingTask
+    previous_state = ma.trajectory_state if ma else None
+    previous_traj_length = ma.traj_length if ma else None
     print("failed eval ------------------")
     print(ma)
-    ma.trajectory_state = "Unsuccess"
     db.session.delete(eval)
 
-
-    # 同时在这里判断，如果轨迹是在通过evo之后被判定为Unsuccess,则需要将之前计算的traj_lenght修改为0.0
-    ma.traj_length = 0.0
+    # 仅回写评估失败，不要在评估阶段覆盖建图的轨迹判定。若存在轨迹状态则保留原值。
+    if ma is not None and (previous_state is None or previous_state == "Running"):
+        ma.trajectory_state = "Unsuccess"
+        ma.traj_length = 0.0 if previous_traj_length is None else previous_traj_length
+        if previous_state == "Running":
+            app.logger.warning(
+                f"[评估] 任务 {ma.id} 处于评估失败，轨迹原本为 Running，已回退为 Unsuccess 并将 traj_length 置为 0"
+            )
+    elif ma is not None:
+        app.logger.info(f"[评估] 任务 {ma.id} 已有轨迹状态 {previous_state}，评估失败不回改该状态")
 
     db.session.commit()
     # flash('Deleted!')
@@ -1232,7 +1449,8 @@ def submit_group_multi_eval(id):
         evaluaton = mappingtask.evaluation
         evaluationIdList.append(evaluaton.id)
 
-        dataset_set.add(mappingtask.mappingTaskConf.dataset.id)
+        dataset = _resolve_dataset(mappingtask, str(group.mappingTaskConf[i].mappingTasks[0].id))
+        dataset_set.add(dataset.id)
 
     if len(dataset_set) != 1:
         # 选取的评估任务的数据集不同 无法生成对比图
@@ -1261,7 +1479,8 @@ def submit_group_multi_eval(id):
         multiEvaluation.mappingtasks.append(mappingTask[i])
         db.session.commit()
 
-    executor.submit(RunEVO_multi, multiEvaluation_id, mappingtaskIdList, evaluationIdList, mappingTask[0].mappingTaskConf.dataset.name)
+    dataset_name = _resolve_dataset_name(mappingTask[0], mappingtaskIdList[0])
+    executor.submit(RunEVO_multi, multiEvaluation_id, mappingtaskIdList, evaluationIdList, dataset_name)
     # RunEVO_multi(multiEvaluation_id, mappingtaskIdList, evaluationIdList, mappingTask[0].mappingTaskConf.dataset.name)
     scheduler.add_job(id="multiEvaluation"+str(multiEvaluation_id), func=CheckEVO_multi, args=[multiEvaluation_id], trigger="interval", seconds=3)
     return redirect(url_for('index_evaluate_multi'))
@@ -1556,5 +1775,3 @@ def submit_group_multi_eval(id):
 
 
 #     return jsonify(result='success')
-
-

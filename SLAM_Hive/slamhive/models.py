@@ -51,6 +51,8 @@ class Algorithm(db.Model):
     description = db.Column(db.Text, nullable=True)
     className = db.Column(db.String(128), nullable=True)
     attribute = db.Column(db.Text, nullable=True)
+    # ros1 / ros2 / other: how datasets are played for this algorithm (flask migrate-algorithm-ros-version)
+    rosVersion = db.Column(db.String(16), nullable=True)
 
     mappingTaskConfs = db.relationship('MappingTaskConfig', back_populates='algorithm', lazy=True)
 

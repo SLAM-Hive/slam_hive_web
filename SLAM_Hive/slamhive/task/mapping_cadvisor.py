@@ -15,12 +15,13 @@
 # along with SLAM Hive.  If not, see <https://www.gnu.org/licenses/>.
 
 import docker, time, os, yaml, requests, json, datetime, csv
+from docker.errors import ContainerError, ImageNotFound, APIError
 import numpy as np
 import matplotlib.pyplot as plt
 from dateutil import parser
 from slamhive import app
 from slamhive.task.utils import *
-from slamhive.task.rosbag_conversion import prepare_dataset_for_mapping
+from slamhive.task.ros_interop import prepare_dataset_for_mapping
 from pathlib import Path
 
 from kubernetes import client, config
@@ -435,6 +436,9 @@ def create_stateful_set(app_v1_api, stateful_set_object):
 # 创建docker
 # 启动cadvisor监控
 def mapping_task(configName, mappingtaskID):
+    app.logger.info(f"########### [Now In mapping_cadvisor.py] ###########")
+    app.logger.info(f"[START!] Now run mapping task {configName} with mappingtaskID {mappingtaskID}")
+
     localConfigPath = os.path.join(app.config['MAPPING_RESULTS_PATH'], mappingtaskID + '/' + configName)    # yaml配置文件的路径
     print("localConfigPath= " + localConfigPath)
     with open(localConfigPath, 'r', encoding='utf-8') as f: # 读取配置文件
@@ -457,6 +461,22 @@ def mapping_task(configName, mappingtaskID):
             shutil.copytree(slamhive_from_path, slamhive_to_path)
 
         scriptsPath = resultPath + "/slamhive"
+        # 兼容某些历史算法目录：slamhive 下存在 config.yaml 目录（而非配置文件），
+        # 例如 orb-slam3-ros-mono-inertial。
+        # 在此阶段统一重命名为 config.yaml.dir，避免后续以文件形式挂载 /slamhive/config.yaml 失败。
+        legacy_cfg_dir = os.path.join(scriptsPath, 'config.yaml')
+        if os.path.isdir(legacy_cfg_dir):
+            renamed_cfg_dir = legacy_cfg_dir + '.dir'
+            if os.path.exists(renamed_cfg_dir):
+                try:
+                    shutil.rmtree(renamed_cfg_dir)
+                except Exception as err:
+                    app.logger.warning(f"清理旧的 legacy config 目录失败: {renamed_cfg_dir}, err={err}")
+            try:
+                os.rename(legacy_cfg_dir, renamed_cfg_dir)
+                app.logger.info(f"已重命名 legacy config 目录: {legacy_cfg_dir} -> {renamed_cfg_dir}")
+            except Exception as err:
+                app.logger.error(f"重命名 legacy config 目录失败: {legacy_cfg_dir}, err={err}")
         datasetPath = os.path.join(SLAM_HIVE_PATH, 'slam_hive_datasets/' + config_dict['slam-hive-dataset']) # 数据集的路径（主机下）
         algoTag = config_dict['slam-hive-algorithm']    # algo 镜像名称
         localResultsPath = os.path.join(app.config['MAPPING_RESULTS_PATH'], mappingtaskID)  # contianer视角下的result路径
@@ -475,6 +495,15 @@ def mapping_task(configName, mappingtaskID):
         skip_list = [config_dict['slam-hive-dataset'] + ".bag"]
 
         if dataset_frequency != None or dataset_resolution != None:
+            # module_b 只处理 <dataset>/<dataset>.bag（ROS1 rosbag API）；没有这个文件时它不会写 finished，
+            # 以前这里会无限等待。ROS2 数据集或其他命名的 bag 暂不支持 frequency/resolution 预处理。
+            preprocess_bag = os.path.join("/slam_hive_datasets", config_dict['slam-hive-dataset'],
+                                          config_dict['slam-hive-dataset'] + ".bag")
+            if not os.path.isfile(preprocess_bag):
+                raise RuntimeError(
+                    "dataset-frequency/dataset-resolution preprocessing needs the ROS1 bag {}; dataset {} has none "
+                    "(ROS2 bags and differently named bags are not supported by this step)".format(
+                        preprocess_bag, config_dict['slam-hive-dataset']))
             datasetPath_change = "/slamhive/dataset/" + config_dict['slam-hive-dataset']
             datasetPath_change_new = "/slamhive/dataset/" + config_dict['slam-hive-dataset'] + "_" + configName
             local_datasetPath_change_new = "/slam_hive_datasets/"  + config_dict['slam-hive-dataset'] + "_" + configName
@@ -493,6 +522,7 @@ def mapping_task(configName, mappingtaskID):
             config_dict,
             datasetPath,
             resultPath,
+            configPath,
             logger=app.logger,
         )
         datasetPath = prepared_dataset.dataset_path
@@ -505,12 +535,15 @@ def mapping_task(configName, mappingtaskID):
             prepared_dataset.manifest_path,
         )
 
-        print('scriptsPath: '+ scriptsPath)
-        print('algoTag: '+ algoTag)
-        print('datasetPath: '+ datasetPath)
-        print('resultPath: '+ resultPath)
-        print('configPath: '+ configPath)
-        container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID)
+        app.logger.info("--------------Now in [mapping_cadvisor.py] mapping_task function: --------------")
+        app.logger.info(f"[CHECKING PATHS:]")
+        app.logger.info(f"scriptsPath: {scriptsPath}")
+        app.logger.info(f"algoTag: {algoTag}")
+        app.logger.info(f"datasetPath: {datasetPath}")
+        app.logger.info(f"resultPath: {resultPath}")
+        app.logger.info(f"configPath: {configPath}")
+        container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID,
+                  extra_volumes=prepared_dataset.extra_volumes, environment=prepared_dataset.environment)
 
         # 删除刚才创建的数据集，要不然内存占的太大了 ## 
         if dataset_frequency != None or dataset_resolution != None: 
@@ -1444,69 +1477,371 @@ def container_dataset_preprocess(scriptsPath, algoTag, datasetPath, datasetPath_
     print("================Running Changing dataset=================")
     # algo_exec = algo.exec_run('bash /slamhive/mappingtask.sh', tty=True, stream=True)
     algo_exec = algo.exec_run('python3 /home/code/project/controller_workstation_run.py', tty=True, stream=True)
-    # 如果数据集已经存在 要等待数据删除完
-    time.sleep(10)
+    # 读完输出即脚本结束，再检查 finished（原来的空转等待在脚本失败时会永远卡住）
+    for chunk in algo_exec.output:
+        print(chunk.decode("utf-8", "replace"), end="")
 
     check_path = check_dataset_path + "/finished"
     print(check_path)
-    while True:
-        if os.path.exists(check_path):
-            break
-
+    finished = os.path.exists(check_path)
     time.sleep(2)
     algo.stop()
     algo.remove()
+    if not finished:
+        raise RuntimeError("dataset preprocessing did not create {}".format(check_path))
     print("==================Changing dataset Finished====================")
 
-def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID):
+def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localResultsPath, mappingtaskID,
+              extra_volumes=None, environment=None):
     # mount datasetPath, resultPath, configPath to image
     # Create Container
-    client = docker.from_env()
-    print("===========Start Container: [slam-hive-algorithm:" + algoTag + "]===========")
-    volume = {scriptsPath:{'bind':'/slamhive','mode':'rw'},
-            datasetPath:{'bind':'/slamhive/dataset','mode':'ro'},
-            resultPath:{'bind':'/slamhive/result','mode':'rw'},
-            configPath:{'bind':'/slamhive/config.yaml','mode':'ro'}}
+    import sys
+    import traceback
+    import os
+    from pathlib import Path
     
-    algo = client.containers.run("slam-hive-algorithm:" + algoTag, command='/bin/bash', detach=True, tty=True, volumes=volume, network="host" ) # 让容器和本机共享网络)
+    app.logger.info("--------------Now in [mapping_cadvisor.py] container function!!!--------------")
     
-    print("================Running Task=================")
-    # algo_exec = algo.exec_run('bash /slamhive/mappingtask.sh', tty=True, stream=True)
-    # time.sleep(100000)
-    # algo.exec_run('sleep 1000000', tty=True, stream=True)
-    algo_exec = algo.exec_run('python3 /slamhive/mapping.py', tty=True, stream=True)
+    app.logger.info(f"现在开始检测docker环境...")
+    try:
+        # === 第1步：检查Docker客户端连接 ===
+        app.logger.info("检查Docker客户端连接...")
+        app.logger.info("[STEP1]:检查Docker客户端连接...")
+        # 修复Docker-in-Docker环境的连接问题
+        import os
+        if 'DOCKER_HOST' in os.environ and 'http+docker' in os.environ['DOCKER_HOST']:
+            app.logger.info("检测到有问题的DOCKER_HOST环境变量，正在清理...")
+            del os.environ['DOCKER_HOST']
+        
+        # 在容器内部使用unix socket连接Docker守护进程
+        try:
+            client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
+            app.logger.info("使用unix socket连接Docker守护进程")
+        except Exception as e:
+            app.logger.info(f"unix socket连接失败，尝试使用from_env: {e}")
+            client = docker.from_env()
+        
+        # 测试Docker连接
+        try:
+            docker_info = client.info()
+            app.logger.info(f"Docker连接成功，版本: {docker_info.get('ServerVersion', 'unknown')}")
+        except Exception as e:
+            app.logger.info(f"❌ Docker连接失败: {e}")
+            raise Exception(f"Docker守护进程连接失败: {e}")
+        
+        # === 第2步：检查镜像是否存在 ===
+        image_name = f"slam-hive-algorithm:{algoTag}"
+        app.logger.info("[STEP2]:检查镜像是否存在...")
+        app.logger.info(f"检查镜像是否存在: {image_name}")
+        
+        try:
+            image = client.images.get(image_name)
+            app.logger.info(f"✅ 镜像存在: {image.id}")
+            app.logger.info(f"镜像标签: {image.tags}")
+            
+            # 列出所有可用镜像（调试信息）
+            images = client.images.list()
+            app.logger.info("可用的镜像:")
+            for img in images:
+                if img.tags:
+                    app.logger.info(f"  - {img.tags[0]}")
+            
+            # 镜像存在，继续执行
+            app.logger.info(f"✅ 镜像检查通过: {image_name}")
+            
+        except ImageNotFound:
+            app.logger.error(f"❌ 镜像不存在: {image_name}")
+            # 列出所有可用镜像
+            images = client.images.list()
+            app.logger.info("可用的镜像:")
+            for img in images:
+                if img.tags:
+                    app.logger.info(f"  - {img.tags[0]}")
+            raise Exception(f"镜像 {image_name} 不存在")
+        except Exception as e:
+            app.logger.error(f"❌ 检查镜像时出错: {e}")
+            raise Exception(f"镜像检查失败: {e}")
+        
+        # === 第3步：检查挂载路径是否存在 ===
+        app.logger.info("[STEP3]:检查挂载路径...")
+        app.logger.info("检查挂载路径...")
+        
+        # 路径转换函数：将主机路径转换为容器内路径
+        def convert_to_container_path(host_path):
+            # 检查是否在容器内运行
+            if os.path.exists("/.dockerenv"):
+                # 在容器内，需要转换路径
+                if host_path.startswith("/SLAM-Hive/slam_hive_results"):
+                    return host_path.replace("/SLAM-Hive/slam_hive_results", "/slam_hive_results")
+                elif host_path.startswith("/SLAM-Hive/slam_hive_datasets"):
+                    return host_path.replace("/SLAM-Hive/slam_hive_datasets", "/slam_hive_datasets")
+                elif host_path.startswith("/SLAM-Hive/slam_hive_algos"):
+                    return host_path.replace("/SLAM-Hive/slam_hive_algos", "/slam_hive_algos")
+                elif host_path.startswith("/SLAM-Hive/slam_hive_configurations"):
+                    return host_path.replace("/SLAM-Hive/slam_hive_configurations", "/slam_hive_configurations")
+            # 如果不在容器内或不需要转换，返回原路径
+            return host_path
+        
+        # 转换路径用于检查
+        container_scriptsPath = convert_to_container_path(scriptsPath)
+        container_datasetPath = convert_to_container_path(datasetPath)
+        container_resultPath = convert_to_container_path(resultPath)
+        container_configPath = convert_to_container_path(configPath)
+        
+        paths_to_check = {
+            'scriptsPath': (scriptsPath, container_scriptsPath),
+            'datasetPath': (datasetPath, container_datasetPath),
+            'resultPath': (resultPath, container_resultPath),
+            'configPath': (configPath, container_configPath)
+        }
+        
+        app.logger.info(f"容器运行检测: {os.path.exists('/.dockerenv')}")
+        
+        for name, (host_path, container_path) in paths_to_check.items():
+            app.logger.info(f"检查路径 {name}:")
+            app.logger.info(f"  主机路径: {host_path}")
+            app.logger.info(f"  容器路径: {container_path}")
+            
+            if os.path.exists(container_path):
+                app.logger.info(f"✅ {name}: {container_path} (存在)")
+                if os.path.isfile(container_path):
+                    size = os.path.getsize(container_path)
+                    app.logger.info(f"   文件大小: {size} bytes")
+                elif os.path.isdir(container_path):
+                    try:
+                        files = os.listdir(container_path)
+                        app.logger.info(f"   目录包含 {len(files)} 个文件/文件夹")
+                        if files:
+                            app.logger.info(f"   前几个项目: {files[:3]}")
+                    except PermissionError:
+                        app.logger.info(f"   ⚠️ 无权限访问目录")
+            else:
+                app.logger.info(f"❌ {name}: {container_path} (不存在)")
+                # 尝试创建目录（如果是结果路径）
+                if name == 'resultPath':
+                    try:
+                        os.makedirs(container_path, exist_ok=True)
+                        app.logger.info(f"✅ 已创建结果目录: {container_path}")
+                    except Exception as e:
+                        app.logger.info(f"❌ 创建结果目录失败: {e}")
+        
+        # === 第4步：准备卷挂载配置 ===
+        app.logger.info("[STEP4]:准备卷挂载配置...")
+        app.logger.info("准备卷挂载配置...")
+        
+        # 为Docker容器创建使用正确的路径
+        # 注意：当Flask应用在Docker容器内运行时，新创建的容器需要映射主机路径，而不是Flask容器内的路径
+        volume = {
+            scriptsPath: {'bind': '/slamhive', 'mode': 'rw'},
+            datasetPath: {'bind': '/slamhive/dataset', 'mode': 'ro'},
+            resultPath: {'bind': '/slamhive/result', 'mode': 'rw'},
+            configPath: {'bind': '/slamhive/config.yaml', 'mode': 'ro'}
+        }
+        
+        # ROS interop mounts (source dataset, converted bag cache) come as
+        # "host:container:mode" strings.
+        volume = ["{}:{}:{}".format(host_path, info['bind'], info['mode']) for host_path, info in volume.items()]
+        volume += list(extra_volumes or [])
 
+        app.logger.info("卷挂载配置:")
+        for mount in volume:
+            app.logger.info(f"  {mount}")
+        
+        # === 第5步：准备日志文件 ===
+        app.logger.info("[STEP5]:准备日志文件...")
+        log_path = "/slam_hive_results/mapping_results/" + str(mappingtaskID) + "/log.txt"
+        log_file = open(log_path, 'a+')
+        log_file.write(configPath + "\n")
+        log_file.flush()
+        
+        # === 第6步：创建容器 ===
+        app.logger.info("[STEP6]:开始创建容器...")
+        app.logger.info(f"开始创建容器: {image_name}")
+        print("===========Start Container: [slam-hive-algorithm:" + algoTag + "]===========")
+
+        config_dict = {}
+        config_candidates = [configPath]
+        if 'container_configPath' in locals():
+            config_candidates.append(container_configPath)
+        config_error = None
+        for candidate in config_candidates:
+            try:
+                with open(candidate, "r", encoding="utf-8") as file:
+                    config_dict = yaml.load(file, Loader=yaml.FullLoader) or {}
+                app.logger.info(f"GPU判定使用配置文件: {candidate}")
+                config_error = None
+                break
+            except Exception as config_err:
+                config_error = config_err
+        if config_error is not None:
+            app.logger.info(f"读取配置文件失败，默认关闭GPU透传: {config_error}")
+            config_dict = {}
+
+        algorithm_attribute = str(config_dict.get("algorithm-attribute") or "")
+        lower_attribute = algorithm_attribute.lower()
+        use_gpu = ("gpu" in lower_attribute) or ("cuda" in lower_attribute)
+        app.logger.info(
+            f"算法属性: '{algorithm_attribute}', GPU透传: {'启用' if use_gpu else '关闭'}"
+        )
+        
+        try:
+            # Own ROS_DOMAIN_ID per task (0 stays free for the host); 1..100.
+            task_environment = {"ROS_DOMAIN_ID": str(1 + int(mappingtaskID) % 100)}
+            task_environment.update(environment or {})
+            app.logger.info(f"容器环境变量: {task_environment}")
+            run_kwargs = {
+                "command": "/bin/bash",
+                "detach": True,
+                "tty": True,
+                "volumes": volume,
+                "environment": task_environment,
+                "network": app.config.get('ALGO_CONTAINER_NETWORK', 'bridge'),
+                "name": f"slam-task-{mappingtaskID}",
+                "remove": False,
+                "mem_limit": "16g",
+                "memswap_limit": "16g",
+                "shm_size": "4g",
+            }
+            if use_gpu:
+                gpu_request = docker.types.DeviceRequest(
+                    count=-1, capabilities=[["gpu"]]
+                )
+                run_kwargs["device_requests"] = [gpu_request]
+                app.logger.info(
+                    f"容器GPU请求参数: {run_kwargs['device_requests']}"
+                )
+
+            algo = client.containers.run(image_name, **run_kwargs)
+            
+            app.logger.info(f"✅ 容器创建成功!")
+            app.logger.info(f"容器ID: {algo.id}")
+            app.logger.info(f"容器名称: {algo.name}")
+            app.logger.info(f"容器状态: {algo.status}")
+            
+            # 检查容器是否真正运行
+            algo.reload()
+            app.logger.info(f"容器刷新后状态: {algo.status}")
+            
+            if algo.status != 'running':
+                app.logger.info(f"⚠️ 容器未正常运行，状态: {algo.status}")
+                # 获取容器日志
+                logs = algo.logs(tail=50).decode('utf-8')
+                app.logger.info(f"容器日志:\n{logs}")
+        
+        except ContainerError as e:
+            app.logger.info(f"❌ 容器运行错误: {e}")
+            app.logger.info(f"容器退出码: {e.exit_status}")
+            app.logger.info(f"容器日志: {e.stderr}")
+            raise
+        except ImageNotFound as e:
+            app.logger.info(f"❌ 镜像未找到: {e}")
+            raise
+        except APIError as e:
+            app.logger.info(f"❌ Docker API错误: {e}")
+            app.logger.info(f"错误详情: {e.explanation}")
+            if use_gpu:
+                app.logger.info(
+                    "GPU模式创建失败，请检查宿主机NVIDIA驱动、Docker GPU运行时和设备可见性。"
+                )
+            raise
+        except Exception as e:
+            app.logger.info(f"❌ 容器创建时发生未知错误: {e}")
+            app.logger.info(f"错误类型: {type(e).__name__}")
+            app.logger.info(f"错误堆栈: {traceback.format_exc()}")
+            raise
+        
+        # === 第6步：执行容器内命令 ===
+        app.logger.info("[STEP6]:开始执行容器内任务...")
+        app.logger.info("开始执行容器内任务...")
+        print("================Running Task=================")
+        
+        try:
+            # 先检查容器内环境
+            check_result = algo.exec_run('ls -la /slamhive/')
+            app.logger.info(f"容器内/slamhive/目录内容:\n{check_result.output.decode()}")
+            
+            # 检查系统资源
+            mem_result = algo.exec_run('cat /proc/meminfo | grep MemTotal')
+            app.logger.info(f"容器内存信息: {mem_result.output.decode()}")
+            
+            # 执行主要任务，并实时捕获输出
+            app.logger.info("开始执行 mapping.py...")
+            # algo_exec = algo.exec_run('sleep 9999999s', stream=True, tty=True)
+
+            ###########################################################################
+            app.logger.info("开始进入sleep调试")
+            # sleep = algo.exec_run('sleep 9999999s')
+            ###########################################################################
+
+            algo_exec = algo.exec_run('python3 /slamhive/mapping.py', stream=True, tty=True)
+            app.logger.info("✅ 成功启动容器内执行")
+            
+            # 实时读取和记录输出
+        except Exception as e:
+            app.logger.error(f"❌ 执行容器内命令失败: {e}")
+            # 尝试检查容器内文件是否存在
+            try:
+                check_result = algo.exec_run('ls -la /slamhive/')
+                app.logger.info(f"容器内/slamhive/目录内容:\n{check_result.output.decode()}")
+                
+                check_result = algo.exec_run('python3 --version')
+                app.logger.info(f"Python版本: {check_result.output.decode()}")
+            except:
+                pass
+            log_file.close()
+            raise
+
+    except Exception as e:
+        app.logger.info(f"🚨 容器创建流程失败: {e}")
+        app.logger.info(f"完整错误信息: {traceback.format_exc()}")
+        
+        # 尝试清理
+        try:
+            if 'algo' in locals():
+                algo.stop()
+                algo.remove()
+                app.logger.info("已清理失败的容器")
+        except:
+            pass
+        
+        # 关闭日志文件
+        try:
+            log_file.close()
+        except:
+            pass
+        
+        raise Exception(f"Docker容器创建失败: {e}")
 
     #######################
     ## 需要加入一些新的功能 ##
     #######################
-    log_path = "/slam_hive_results/mapping_results/" + str(mappingtaskID) + "/log.txt"
-    log_file = open(log_path, 'a+')
-    log_file.write(configPath)
 
 
     total_status_list = []
     start_time = datetime.datetime.utcnow()
 
     while True:
-        # time.sleep(0.1)
+        time.sleep(0.1)
         try:
-            # print(next(algo_exec).decode())
-            now_str = next(algo_exec).decode()
+            # print(next(algo_exec.output).decode())
+            now_str = next(algo_exec.output).decode()
             if "[RUNNING]  Bag Time" in now_str :
                 continue
             # ==print(now_str)
-            #print(now_str)
+            # print(now_str)
             log_file.write(now_str)
         except StopIteration:
             # 实在不行考虑一下判断finished吧
+            break
+        except Exception as e:
+            app.logger.info(f"读取容器输出时出错: {e}")
             break
             
         if((datetime.datetime.utcnow() - start_time).total_seconds() > 1):
             fetch_stat(algo.id, total_status_list, start_time)
 
-    log_file.close()
 
+    log_file.close()
 
     usage_info = calulate_usage(total_status_list)
     # print(usage_info)
@@ -1538,14 +1873,19 @@ def container(scriptsPath, algoTag, datasetPath, resultPath, configPath, localRe
     algo.remove()
     print("==================Mapping Task Finished====================")
 
-
-
 # Fetch status of a container
 # This function should be called once per second when the mapping task runs
 def fetch_stat_combination(container_id, total_status_list, start_time, host_ip):
-    # ENDPOINT_CADVISOR = "http://localhost:8085"
-    # ENDPOINT_CADVISOR = "http://cadvisor:8080"
-    ENDPOINT_CADVISOR = "http://" + host_ip + ":8085"
+    # 自动检测运行环境并选择正确的 cAdvisor 端点
+    import os
+    
+    # 在Docker Compose环境中，使用服务名连接
+    if os.path.exists('/.dockerenv'):  # 检查是否在Docker容器内
+        ENDPOINT_CADVISOR = "http://cadvisor:8080"  # Docker Compose 环境
+    else:
+        ENDPOINT_CADVISOR = "http://" + host_ip + ":8085"  # 集群环境
+    
+    app.logger.info(f"连接 cAdvisor: {ENDPOINT_CADVISOR}")
     r = requests.get(ENDPOINT_CADVISOR+"/api/v1.3/docker/"+container_id)
     if r.content.decode().split(' ')[0] == 'failed':
         # 该容器已经执行完毕
@@ -1554,7 +1894,7 @@ def fetch_stat_combination(container_id, total_status_list, start_time, host_ip)
     
     try:
         j = json.loads(r.content)
-        status_list = j['/docker/'+container_id]["stats"]
+        status_list = j['/system.slice/docker-'+container_id+'.scope']["stats"]
         for status in status_list:
             if status not in total_status_list:
                 if(parser.parse(status["timestamp"]).replace(tzinfo=None)>start_time):
@@ -1599,13 +1939,20 @@ def calulate_usage_combination(total_status_list):
 # Fetch status of a container
 # This function should be called once per second when the mapping task runs
 def fetch_stat(container_id, total_status_list, start_time):
-    # ENDPOINT_CADVISOR = "http://localhost:8085"
-    # ENDPOINT_CADVISOR = "http://cadvisor:8080"
-    ENDPOINT_CADVISOR = "http://localhost:8080" # for the workstation version;
+    # 自动检测运行环境并选择正确的 cAdvisor 端点
+    import os
+    
+    # 在Docker Compose环境中，使用服务名连接
+    if os.path.exists('/.dockerenv'):  # 检查是否在Docker容器内
+        ENDPOINT_CADVISOR = "http://cadvisor:8080"  # Docker Compose 环境
+    else:
+        ENDPOINT_CADVISOR = "http://localhost:8080"  # 本地开发环境
+    
+    app.logger.info(f"连接 cAdvisor: {ENDPOINT_CADVISOR}")
     # print(ENDPOINT_CADVISOR+"/api/v1.3/docker/"+str(container_id))
     r = requests.get(ENDPOINT_CADVISOR+"/api/v1.3/docker/"+str(container_id))
     j = json.loads(r.content)
-    status_list = j['/docker/'+container_id]["stats"]
+    status_list = j['/system.slice/docker-'+str(container_id)+'.scope']["stats"]
     for status in status_list:
         if status not in total_status_list:
             if(parser.parse(status["timestamp"]).replace(tzinfo=None)>start_time):
@@ -1616,26 +1963,52 @@ def fetch_stat(container_id, total_status_list, start_time):
 # Calculate the status logs into CPU usage and memory usage
 # The output is a list. Each element of the list is in form of (Time, CPU usage, Memorry usage)
 def calulate_usage(total_status_list):
-    cpu_usage_list=[0]
-    time_start = parser.parse(total_status_list[0]["timestamp"])
-    for i in range(1,len(total_status_list)):
-        s0 = total_status_list[i-1]
-        s1 = total_status_list[i]
-        time_diff = (parser.parse(s1["timestamp"]) - parser.parse(s0["timestamp"])).total_seconds() * 1000000000
-        cpu_time_diff = s1["cpu"]["usage"]["total"] - s0["cpu"]["usage"]["total"]
-        cpu_usage = cpu_time_diff/time_diff
-        cpu_usage_list.append(cpu_usage)
+    # 检查列表是否为空
+    if not total_status_list:
+        app.logger.warning("监控数据为空，无法计算使用率统计")
+        return []
     
-    mem_usage_list = [s["memory"]["usage"] for s in total_status_list]
-    time_list = [(parser.parse(s["timestamp"])-time_start).total_seconds() for s in total_status_list]
+    # 检查列表是否只有一个元素
+    if len(total_status_list) < 2:
+        app.logger.warning("监控数据不足，无法计算使用率统计")
+        return []
+    
+    try:
+        cpu_usage_list=[0]
+        time_start = parser.parse(total_status_list[0]["timestamp"])
+        for i in range(1,len(total_status_list)):
+            s0 = total_status_list[i-1]
+            s1 = total_status_list[i]
+            time_diff = (parser.parse(s1["timestamp"]) - parser.parse(s0["timestamp"])).total_seconds() * 1000000000
+            cpu_time_diff = s1["cpu"]["usage"]["total"] - s0["cpu"]["usage"]["total"]
+            cpu_usage = cpu_time_diff/time_diff
+            cpu_usage_list.append(cpu_usage)
+        
+        mem_usage_list = [s["memory"]["usage"] for s in total_status_list]
+        time_list = [(parser.parse(s["timestamp"])-time_start).total_seconds() for s in total_status_list]
 
-    return list(zip(time_list,cpu_usage_list,mem_usage_list))
+        return list(zip(time_list,cpu_usage_list,mem_usage_list))
+    except Exception as e:
+        app.logger.error(f"计算使用率统计时出错: {e}")
+        return []
 
 
 # Generate csv and figure from profiling data
 # `profiling.csv`, `profiling_cpu.png` and `profiling_ram.png` will be saved to the path specifed
 def generate_profiling_csv_and_fig(usage_info, path_to_save):
     print(path_to_save)
+    
+    # 检查 usage_info 是否为空
+    if not usage_info:
+        app.logger.warning("监控数据为空，无法生成性能分析图表")
+        # 创建空的CSV文件
+        with open(path_to_save+'/profiling.csv', 'w', newline='') as csvfile:
+            fieldnames = ['time', 'cpu_usage', 'memory_usage']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+        return
+    
+    # 生成CSV文件
     with open(path_to_save+'/profiling.csv', 'w', newline='') as csvfile:
         fieldnames = ['time', 'cpu_usage', 'memory_usage']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -1643,28 +2016,39 @@ def generate_profiling_csv_and_fig(usage_info, path_to_save):
         writer.writeheader()
         for usage in usage_info:
             writer.writerow({'time': usage[0], 'cpu_usage': usage[1], 'memory_usage': usage[2]})
-    profiling_data = np.array(usage_info).T
+    
+    try:
+        profiling_data = np.array(usage_info).T
 
-    plt.plot(profiling_data[0],profiling_data[1])
-    plt.xlabel("Time (sec)")
-    plt.ylabel("CPU usage (cores)")    
-    plt.title("CPU usage over Time")
-    max_cpu = max(profiling_data[1])
-    time_cpu = profiling_data[0][np.argmax(profiling_data[1])]
-    print(max_cpu)
-    plt.annotate('Max CPU usage = ' + str(round(max_cpu,2)), xy=(time_cpu, max_cpu), xytext=(time_cpu-25, max_cpu-0.5),
-                color="r", arrowprops=dict(arrowstyle="->", color="r"))
-    plt.savefig(path_to_save+"/profiling_cpu.png")
-    plt.close()
+        # 生成CPU使用率图表
+        plt.plot(profiling_data[0],profiling_data[1])
+        plt.xlabel("Time (sec)")
+        plt.ylabel("CPU usage (cores)")    
+        plt.title("CPU usage over Time")
+        max_cpu = max(profiling_data[1])
+        time_cpu = profiling_data[0][np.argmax(profiling_data[1])]
+        print(max_cpu)
+        plt.annotate('Max CPU usage = ' + str(round(max_cpu,2)), xy=(time_cpu, max_cpu), xytext=(time_cpu-25, max_cpu-0.5),
+                    color="r", arrowprops=dict(arrowstyle="->", color="r"))
+        plt.savefig(path_to_save+"/profiling_cpu.png")
+        plt.close()
 
-    plt.plot(profiling_data[0],profiling_data[2]/(1024*1024))
-    plt.xlabel("Time (sec)")
-    plt.ylabel("RAM usage (MiB)")    
-    plt.title("RAM usage over Time")
-    max_ram = max(profiling_data[2]/(1024*1024))
-    time_ram = profiling_data[0][np.argmax(profiling_data[2])]
-    print(max_ram)
-    plt.annotate('Max RAM usage = ' + str(round(max_ram,2)), xy=(time_ram, max_ram), xytext=(time_ram-50, max_ram-300),
-                color="r", arrowprops=dict(arrowstyle="->", color="r"))
-    plt.savefig(path_to_save+"/profiling_ram.png")
-    plt.close()
+        # 生成内存使用率图表
+        plt.plot(profiling_data[0],profiling_data[2]/(1024*1024))
+        plt.xlabel("Time (sec)")
+        plt.ylabel("RAM usage (MiB)")    
+        plt.title("RAM usage over Time")
+        max_ram = max(profiling_data[2]/(1024*1024))
+        time_ram = profiling_data[0][np.argmax(profiling_data[2])]
+        print(max_ram)
+        plt.annotate('Max RAM usage = ' + str(round(max_ram,2)), xy=(time_ram, max_ram), xytext=(time_ram-50, max_ram-300),
+                    color="r", arrowprops=dict(arrowstyle="->", color="r"))
+        plt.savefig(path_to_save+"/profiling_ram.png")
+        plt.close()
+    except Exception as e:
+        app.logger.error(f"生成性能分析图表时出错: {e}")
+        # 清理可能创建的图表文件
+        try:
+            plt.close('all')
+        except:
+            pass
