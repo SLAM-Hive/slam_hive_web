@@ -15,7 +15,7 @@
 # along with SLAM Hive.  If not, see <https://www.gnu.org/licenses/>.
 
 # yaml configuration
-version: '3'
+# version: '3'
 services:
   flask:
     container_name: slam_hive_web
@@ -23,6 +23,7 @@ services:
     # image: slam-hive-web:2024_4_12
     ports:
       - "5000:5000"
+      - "5001:5001"
     links:
       - mysql
     privileged: true
@@ -69,7 +70,9 @@ services:
       #   ipv4_address: 172.40.0.3
     hostname: mysql_ip
   cadvisor:
-    image: google/cadvisor
+    build:
+      context: ./cadvisor_local
+    image: slam-hive-cadvisor:v0.56.2-local
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
@@ -83,11 +86,13 @@ services:
     ports:
       - 8085:8080
     restart: always
-    # networks:
-    #   extnetwork:
+    networks:
+      - web
+      - inter
 networks:
   web:
-    external: true
+    # external: true
+    driver: bridge
   inter:
     driver: bridge
      

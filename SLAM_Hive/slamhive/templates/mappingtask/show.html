@@ -80,7 +80,7 @@
             </thead>
             <tbody>
                 {% for key1, value1 in config_dict.items() %}
-                    {% if value1 != None and key1 != "slam-hive-algorithm" and key1 != "slam-hive-dataset" %}
+                    {% if value1 != None and value1 != "" and key1 != "slam-hive-algorithm" and key1 != "slam-hive-dataset" and value1 is mapping %}
                         {% for key, value in value1.items() %}
                         <tr>
                             <td>{{ key1 }}</td>

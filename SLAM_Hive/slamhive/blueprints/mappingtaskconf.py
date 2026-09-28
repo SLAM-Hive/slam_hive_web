@@ -716,6 +716,10 @@ def config_match(data):
     print("------------------- parameters ----------------")
     # print(db_params)
     for i in range(len(db_params)):
+        # Historical rows can contain dangling ParameterValue records
+        # (algoParam relation is None). Skip them to keep config_match robust.
+        if db_params[i].algoParam is None:
+            continue
         db_ids.append(db_params[i].id)
         db_keyNames.append(db_params[i].keyName)
         # valueType修改
@@ -797,4 +801,3 @@ def config_match(data):
 
         
         
-
