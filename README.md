@@ -19,10 +19,11 @@ Here we offer some easy access to some important modeules in SLAM-Hive:
    - [parse multiple configurations](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/blueprints/utils.py)
    - [parse custom analysis](https://github.com/SLAM-Hive/slam_hive_web/blob/main/SLAM_Hive/slamhive/task/custom_analysis_resolver.py)
 
-For workstation mapping tasks, the Web scheduler plays every dataset to the algorithm in the algorithm's ROS version (ROS1 or ROS2) and converts bags when needed. See [Dataset playback and ROS1 / ROS2](docs/rosbag_compatibility.md).
+For workstation mapping tasks, the Web scheduler plays every dataset to the algorithm in the algorithm's ROS version (ROS1 or ROS2) and converts bags when needed. See [5. ROS1 / ROS2 algorithms and datasets](#5-ros1--ros2-algorithms-and-datasets).
 
 # Contents
  - [How to add a new algorithm and dataset to SLAM-Hive and use them?](#4-add-new-algorithm-and-dataset); [Turorial](https://slam-hive.net/wiki/add_new_algorithm_and_dataset)
+ - [How do ROS1 and ROS2 algorithms and datasets work together?](#5-ros1--ros2-algorithms-and-datasets)
 
  - [How to install SLAM-Hive in workstation?](#1-deploy-in-workstation); [Turorial](https://slam-hive.net/wiki/workstation)
  - [How to install SLAM-Hive in cluster?](#2-deploy-in-cluster); [Turorial](https://slam-hive.net/wiki/cluster)
@@ -438,6 +439,30 @@ Same as workstation version, except you should input the aliyun server configura
 
 # 4. Add new algorithm and dataset
 In wiki tutorial, we give a example of how to add a algorithm and dataset to SLAM-Hive and how to use them: https://slam-hive.net/wiki/add_new_algorithm_and_dataset
+
+# 5. ROS1 / ROS2 algorithms and datasets
+An algorithm only consumes topics; how the bag is stored does not matter to it. SLAM-Hive therefore plays every dataset in the algorithm's ROS version and converts the bag when needed.
+
+You provide two things:
+
+- **Algorithm**: choose its ROS version (`ros1` / `ros2`) when registering it. ROS2 images need `ros-<distro>-rosbag2-storage-mcap`.
+- **Dataset**: put a ROS1 `.bag` or a ROS2 bag directory in the dataset folder, with a `slamhive_dataset.yaml` that lists the bags and how they are played by default. Copy one from a similar dataset in [slam_hive_datasets](https://github.com/SLAM-Hive/slam_hive_datasets).
+
+SLAM-Hive then plays the dataset as follows:
+
+| algorithm \ dataset | ROS1 bag | ROS2 bag |
+| --- | --- | --- |
+| ROS1 algorithm | played as is | converted to a ROS1 bag |
+| ROS2 algorithm | converted to mcap | played as is (converted to mcap if the image cannot read that version) |
+
+Task configurations stay the same. Converted bags are cached, and each task records what was done in `mapping_results/<task>/interop/decision.json`. See [docs/rosbag_compatibility.md](docs/rosbag_compatibility.md) for details.
+
+**Example:** [rtabmap-ros2](https://github.com/SLAM-Hive/rtabmap-ros2) is a ROS2 (Humble) algorithm, registered with ROS version `ros2`.
+
+- On [`rtabmap_demo_mapping`](https://github.com/SLAM-Hive/slam_hive_datasets/tree/main/rtabmap_demo_mapping), its official ROS2 demo bag, the bag is played as is.
+- On the TUM ROS1 dataset `rgbd_dataset_freiburg1_xyz`, the same image gets the bag converted to mcap and reaches an ATE of 0.03–0.05 m.
+
+Its README lists the parameters of the TUM example (topics, frames and the `/tf` remap).
 
 # Licence
 The source code is released under [GPLv3](http://www.gnu.org/licenses/) license.
